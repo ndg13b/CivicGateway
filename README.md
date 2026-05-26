@@ -1,2 +1,38 @@
-# CivicDuty
-This is intended to help users be informed about their elections and elected officials.
+# Local Ballot Finder
+
+A simple, nonpartisan website that lets people select their city and see upcoming
+elections or their current elected officials, with links to contact info and
+(where available) social media. If there's no upcoming election, it shows current
+officeholders instead.
+
+Currently covers a few St. Louis County, Missouri cities, starting with Maryland
+Heights, Creve Coeur, and Bridgeton.
+
+## How it works
+
+This is a single HTML file (`index.html`) — no server or database required. All the
+city information lives in one place: the `BALLOT_DATA` object near the top of the
+script. The page reads that data to build the dropdown menus and display results.
+
+## Adding or updating a city
+
+1. Open `index.html` in any text editor.
+2. Find the `BALLOT_DATA` section near the top of the `<script>`.
+3. Copy an existing city block (or the commented `TEMPLATE` block) and fill in
+   verified information from the city's official website.
+4. Save and refresh. The dropdowns update automatically.
+
+Two optional fields add richer features:
+- `resources` on a race makes its title clickable, linking to debate/forum videos.
+- `interviews` on a person adds an interview/coverage section to their page.
+
+Please use official, verifiable sources and keep all entries nonpartisan.
+
+## Contributing
+
+Corrections and new cities are welcome. Because this is voter information, accuracy
+matters — cite the official source for any data you add.
+
+## License
+
+Code is released under the MIT License (see `LICENSE`).
