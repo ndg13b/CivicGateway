@@ -1,12 +1,13 @@
-# Local Ballot Finder
+# Civic Gateway
 
 A simple, nonpartisan website that lets people select their city and see upcoming
 elections or their current elected officials, with links to contact info and
 (where available) social media. If there's no upcoming election, it shows current
 officeholders instead.
 
-Currently covers a few St. Louis County, Missouri cities, starting with Maryland
-Heights, Creve Coeur, and Bridgeton.
+The name is a nod to St. Louis (the "Gateway" city) and to the idea of a gateway —
+a way in — to local civic information. Coverage starts in St. Louis County, Missouri
+(Maryland Heights, Creve Coeur, and Bridgeton) and is designed to expand to more areas.
 
 ## How it works
 
