@@ -11,9 +11,23 @@ a way in — to local civic information. Coverage starts in St. Louis County, Mi
 
 ## How it works
 
-This is a single HTML file (`index.html`) — no server or database required. All the
-city information lives in one place: the `BALLOT_DATA` object near the top of the
-script. The page reads that data to build the dropdown menus and display results.
+The live site is a single HTML file (`index.html`) — no server or database required.
+All the city information lives in one place: the `BALLOT_DATA` object near the top of
+the script. The page reads that data to build the dropdown menus and display results.
+
+## Moving to a database (in progress)
+
+To let the site scale past a handful of hand-edited cities, we're migrating the data
+into a Supabase (Postgres) database. See [`DATABASE-PLAN.md`](DATABASE-PLAN.md) for
+the full plan:
+
+- [`schema.sql`](schema.sql) — the table definitions and Row Level Security policies
+- [`seed.sql`](seed.sql) — the 3 current cities, converted into insertable rows
+- [`db-test.html`](db-test.html) — a standalone page that fetches from Supabase
+  instead of `BALLOT_DATA`, for comparing against the live site before cutover
+
+`index.html` is untouched by this work until the database version is verified to
+match it exactly.
 
 ## Adding or updating a city
 
