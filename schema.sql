@@ -107,3 +107,12 @@ create policy "public can read resources" on resources for select using (true);
 -- No insert/update/delete policies are defined on purpose — that means the
 -- public "anon" key can never modify data, only the Supabase dashboard
 -- (or a service-role key you never expose to the browser) can.
+
+-- RLS policies only take effect once a role has the underlying table
+-- privilege. Grant the Supabase anon/authenticated roles read-only access;
+-- combined with the select-only policies above and no write policies, the
+-- public key can read every row but modify nothing. The ALTER DEFAULT line
+-- makes this apply automatically to any tables added later.
+grant usage on schema public to anon, authenticated;
+grant select on all tables in schema public to anon, authenticated;
+alter default privileges in schema public grant select on tables to anon, authenticated;
