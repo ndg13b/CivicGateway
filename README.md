@@ -23,8 +23,10 @@ the full plan:
 
 - [`schema.sql`](schema.sql) — the table definitions and Row Level Security policies
 - [`seed.sql`](seed.sql) — the 3 current cities, converted into insertable rows
-- [`db-test.html`](db-test.html) — a standalone page that fetches from Supabase
-  instead of `BALLOT_DATA`, for comparing against the live site before cutover
+- [`db-test.html`](db-test.html) — the database-backed version of the site. It
+  fetches from Supabase instead of `BALLOT_DATA` and carries the new site design
+  (shared stylesheet and logic live in [`assets/`](assets/)). Once verified, the
+  plan is to make this the main site.
 
 `index.html` is untouched by this work until the database version is verified to
 match it exactly.
