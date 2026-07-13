@@ -1,0 +1,66 @@
+{
+  "_comment": "Offline snapshot of the database, served if Supabase is unreachable. Same shape as the app's Supabase query result. Regenerate when the database changes. Last synced: July 2026 (matches seed.sql).",
+  "jurisdictions": [
+    {
+      "name": "Maryland Heights",
+      "state": "MO",
+      "county": "St. Louis County",
+      "city_website": "https://www.marylandheights.com/",
+      "twitter": "CityofMH",
+      "facebook": "cityofmarylandheights",
+      "instagram": "marylandheightsmo",
+      "youtube": "https://www.youtube.com/channel/UCIc7CM_0RP8TJSjRYHjZ19A",
+      "next_election_note": "The most recent municipal election was April 7, 2026. The next regular municipal election is expected April 2027, when one City Council seat in each ward is up. Candidate details will appear here once filing opens.",
+      "officials": [
+        { "name": "Mike Moeller", "office": "Mayor", "party": "Nonpartisan", "term": "Four-year term", "bio": "Mayor of Maryland Heights; presides over City Council meetings.", "email": "mmoeller@marylandheights.com", "phone": "314-878-6730", "sort_order": 0 },
+        { "name": "Abigail Dannegger", "office": "City Council — Ward 1", "party": "Nonpartisan", "term": "Two-year term", "email": "adannegger@marylandheights.com", "phone": "314-619-2450", "sort_order": 1 },
+        { "name": "Susan Taylor", "office": "City Council — Ward 1", "party": "Nonpartisan", "term": "Two-year term", "email": "staylor@marylandheights.com", "phone": "314-484-7627", "sort_order": 2 },
+        { "name": "Howard Abrams", "office": "City Council — Ward 2", "party": "Nonpartisan", "term": "Two-year term", "email": "habrams@marylandheights.com", "phone": "314-432-0814", "sort_order": 3 },
+        { "name": "Kim Baker", "office": "City Council — Ward 2", "party": "Nonpartisan", "term": "Two-year term", "email": "kbaker@marylandheights.com", "phone": "314-952-1702", "sort_order": 4 },
+        { "name": "Chuck Caverly", "office": "City Council — Ward 3", "party": "Nonpartisan", "term": "Two-year term", "email": "ccaverly@marylandheights.com", "phone": "314-566-0424", "sort_order": 5 },
+        { "name": "Nancy Medvick", "office": "City Council — Ward 3 (President Pro-Tem)", "party": "Nonpartisan", "term": "Two-year term", "email": "nmedvick@marylandheights.com", "phone": "314-703-8987", "sort_order": 6 },
+        { "name": "Steve Borgmann", "office": "City Council — Ward 4", "party": "Nonpartisan", "term": "Two-year term", "email": "sborgmann@marylandheights.com", "phone": "314-393-9448", "sort_order": 7 },
+        { "name": "Norm Rhea", "office": "City Council — Ward 4", "party": "Nonpartisan", "term": "Two-year term", "email": "nrhea@marylandheights.com", "phone": "314-739-0096", "sort_order": 8 }
+      ],
+      "elections": []
+    },
+    {
+      "name": "Creve Coeur",
+      "state": "MO",
+      "county": "St. Louis County",
+      "city_website": "https://crevecoeurmo.gov/",
+      "next_election_note": "Council members serve staggered two-year terms; the mayor serves a three-year term. Council seats in each ward come up at the regular April municipal election. Candidate details will appear here once filing opens.",
+      "officials": [
+        { "name": "Robert Hoffman", "office": "Mayor", "party": "Nonpartisan", "term": "Three-year term", "bio": "Mayor of Creve Coeur, elected April 2021 after serving on the City Council 2010–2021.", "website": "https://crevecoeurmo.gov/318/Mayor-Robert-Hoffman", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 0 },
+        { "name": "Mark Manlin", "office": "City Council — Ward 1", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/319/Mark-Manlin---Ward-1", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 1 },
+        { "name": "Donna Spence", "office": "City Council — Ward 1", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/320/Donna-Spence---Ward-1", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 2 },
+        { "name": "Nicole Greer", "office": "City Council — Ward 2", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/321/Nicole-Greer---Ward-2", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 3 },
+        { "name": "Kim Norwood", "office": "City Council — Ward 2", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/322/Kim-Norwood---Ward-2", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 4 },
+        { "name": "David Hoffman", "office": "City Council — Ward 3", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/324/David-Hoffman---Ward-3", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 5 },
+        { "name": "Drew Newman", "office": "City Council — Ward 3", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/323/Drew-Newman---Ward-3", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 6 },
+        { "name": "Mara Berry", "office": "City Council — Ward 4", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/325/Mara-Berry---Ward-4", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 7 },
+        { "name": "Scott Saunders", "office": "City Council — Ward 4", "party": "Nonpartisan", "website": "https://crevecoeurmo.gov/326/Scott-Saunders---Ward-4", "email": "mayor-council@crevecoeurmo.gov", "phone": "314-432-6000", "sort_order": 8 }
+      ],
+      "elections": []
+    },
+    {
+      "name": "Bridgeton",
+      "state": "MO",
+      "county": "St. Louis County",
+      "city_website": "https://www.bridgetonmo.com/",
+      "next_election_note": "Each ward has two council members; one seat in each ward is elected every April. Candidate details will appear here once filing opens.",
+      "officials": [
+        { "name": "Randy Hein", "office": "Mayor", "party": "Nonpartisan", "bio": "Mayor of Bridgeton.", "email": "rhein@bridgetonmo.gov", "phone": "314-373-3811", "facebook": "p/Randy-Hein-Mayor-of-Bridgeton-61556963852290", "sort_order": 0 },
+        { "name": "Stephen Wesche", "office": "City Council — Ward 1", "party": "Nonpartisan", "email": "swesche@bridgetonmo.gov", "phone": "314-372-8010", "sort_order": 1 },
+        { "name": "Robert Saettele", "office": "City Council — Ward 1", "party": "Nonpartisan", "email": "rsaettele@bridgetonmo.gov", "phone": "314-291-1131", "sort_order": 2 },
+        { "name": "Bakula Patel", "office": "City Council — Ward 2", "party": "Nonpartisan", "email": "bpatel@bridgetonmo.gov", "phone": "314-344-5033", "sort_order": 3 },
+        { "name": "Kathy Ioannou", "office": "City Council — Ward 2", "party": "Nonpartisan", "email": "kioannou@bridgetonmo.gov", "phone": "314-737-7878", "sort_order": 4 },
+        { "name": "Kathy Luther", "office": "City Council — Ward 3", "party": "Nonpartisan", "email": "kluther@bridgetonmo.gov", "phone": "314-209-1715", "sort_order": 5 },
+        { "name": "Gretchen Luke", "office": "City Council — Ward 3", "party": "Nonpartisan", "email": "gluke@bridgetonmo.gov", "phone": "314-292-9244", "sort_order": 6 },
+        { "name": "Joni Norris", "office": "City Council — Ward 4", "party": "Nonpartisan", "email": "jnorris@bridgetonmo.gov", "phone": "314-291-8041", "sort_order": 7 },
+        { "name": "Don Hood", "office": "City Council — Ward 4", "party": "Nonpartisan", "email": "dhood@bridgetonmo.gov", "phone": "314-716-3599", "sort_order": 8 }
+      ],
+      "elections": []
+    }
+  ]
+}
