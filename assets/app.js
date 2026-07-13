@@ -64,16 +64,26 @@ function withTimeout(promise, ms) {
 
 async function fetchFromSupabase() {
   const supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+  // officials/elections have two possible parents (city or district) since
+  // migration 001, so every embed names its foreign key explicitly.
   const { data, error } = await withTimeout(
     supabase.from("jurisdictions").select(`
       *,
-      officials(*),
-      elections(
+      officials!officials_jurisdiction_id_fkey(*),
+      elections!elections_jurisdiction_id_fkey(
         *,
         races(
           *,
           candidates(*, resources:resources_candidate_id_fkey(*)),
           resources:resources_race_id_fkey(*)
+        )
+      ),
+      jurisdiction_districts(
+        partial,
+        districts(
+          *,
+          officials!officials_district_id_fkey(*),
+          elections!elections_district_id_fkey(*)
         )
       )
     `),
@@ -121,15 +131,40 @@ async function loadData() {
   PLACES = {};
   const today = new Date().toISOString().slice(0, 10);
 
+  const mapOfficial = (o) => ({
+    name: o.name, office: o.office, party: o.party, term: o.term, bio: o.bio,
+    email: o.email, phone: o.phone, website: o.website,
+    twitter: o.twitter, facebook: o.facebook, interviews: [],
+  });
+
   for (const j of data) {
     const key = `${j.name}, ${j.state}`;
     const officials = (j.officials || [])
       .slice().sort((a, b) => a.sort_order - b.sort_order)
-      .map((o) => ({
-        name: o.name, office: o.office, party: o.party, term: o.term, bio: o.bio,
-        email: o.email, phone: o.phone, website: o.website,
-        twitter: o.twitter, facebook: o.facebook, interviews: [],
-      }));
+      .map(mapOfficial);
+
+    const districts = (j.jurisdiction_districts || [])
+      .map((link) => {
+        const d = link.districts;
+        if (!d) return null;
+        const nextDistrictElection = (d.elections || [])
+          .filter((e) => e.election_date >= today)
+          .sort((a, b) => a.election_date.localeCompare(b.election_date))[0];
+        return {
+          level: d.level,
+          name: d.name,
+          shortName: d.short_name,
+          infoUrl: d.info_url,
+          sortOrder: d.sort_order ?? 0,
+          partial: !!link.partial,
+          officials: (d.officials || [])
+            .slice().sort((a, b) => a.sort_order - b.sort_order)
+            .map(mapOfficial),
+          nextElectionDate: nextDistrictElection ? nextDistrictElection.election_date : null,
+        };
+      })
+      .filter(Boolean)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
 
     const nextElection = (j.elections || [])
       .filter((e) => e.election_date >= today)
@@ -169,6 +204,7 @@ async function loadData() {
       note: j.next_election_note,
       election,
       officials,
+      districts,
     };
   }
 
@@ -284,6 +320,7 @@ function render(key) {
   const p = PLACES[key];
   if (!p) return;
   CURRENT_KEY = key;
+  MODAL_PEOPLE = [];
   const r = $("results");
 
   let html = `
@@ -297,10 +334,12 @@ function render(key) {
     html += renderElection(p);
   } else {
     html += `
-      <div class="notice"><strong>No election is currently scheduled.</strong>
+      <div class="notice"><strong>No city election is currently scheduled.</strong>
       ${p.note ? ` ${esc(p.note)}` : ""}</div>
       ${renderOfficials(p)}`;
   }
+
+  html += renderDistricts(p);
 
   r.innerHTML = html;
   r.classList.add("active");
@@ -338,24 +377,67 @@ function personCard(person, index, { featured = false } = {}) {
 }
 
 function renderOfficials(p) {
-  MODAL_PEOPLE = p.officials;
   const featured = [];
   const rest = [];
-  p.officials.forEach((o, i) => {
-    (String(o.office || "").toLowerCase().startsWith("mayor") ? featured : rest).push([o, i]);
+  p.officials.forEach((o) => {
+    const idx = MODAL_PEOPLE.push(o) - 1;
+    (String(o.office || "").toLowerCase().startsWith("mayor") ? featured : rest).push([o, idx]);
   });
   return `
-    <div class="section-title">Your current elected officials</div>
+    <div class="section-title">Your city officials</div>
     <div class="people-grid">
       ${featured.map(([o, i]) => personCard(o, i, { featured: true })).join("")}
       ${rest.map(([o, i]) => personCard(o, i)).join("")}
     </div>`;
 }
 
+const LEVEL_LABELS = [
+  ["us_house", "U.S. Congress"],
+  ["state_senate", "Missouri Senate"],
+  ["state_house", "Missouri House"],
+];
+
+function renderDistricts(p) {
+  if (!p.districts || !p.districts.length) return "";
+
+  const anyPartial = p.districts.some((d) => d.partial);
+  const nextDate = p.districts.map((d) => d.nextElectionDate).filter(Boolean).sort()[0];
+
+  let html = `<div class="section-title">Your state &amp; federal representatives</div>`;
+  if (nextDate) {
+    html += `<p class="district-note">These seats appear on the ${esc(formatDate(nextDate))} ballot.</p>`;
+  }
+
+  for (const [level, label] of LEVEL_LABELS) {
+    const ds = p.districts.filter((d) => d.level === level);
+    if (!ds.length) continue;
+    let cards = "";
+    for (const d of ds) {
+      for (const o of d.officials) {
+        const idx = MODAL_PEOPLE.push(o) - 1;
+        const shown = { ...o, office: (o.office || d.name) + (d.partial ? " †" : "") };
+        cards += personCard(shown, idx);
+      }
+    }
+    if (!cards) continue;
+    html += `
+      <div class="district-group">
+        <h4 class="district-level">${esc(label)}</h4>
+        <div class="people-grid">${cards}</div>
+      </div>`;
+  }
+
+  if (anyPartial) {
+    html += `<p class="district-note">† This district covers only part of the city, so your
+      representative depends on your exact address.
+      <a href="https://house.mo.gov/legislatorlookup.aspx" target="_blank" rel="noopener">Look up your Missouri legislators</a> ·
+      <a href="https://ziplook.house.gov/htbin/findrep_house" target="_blank" rel="noopener">Find your U.S. representative</a></p>`;
+  }
+  return html;
+}
+
 function renderElection(p) {
   const e = p.election;
-  // Flatten candidates across races into one list the dialog can index into.
-  MODAL_PEOPLE = [];
   let html = `
     <div class="election-banner">
       <h3>${esc(e.name)}</h3>
