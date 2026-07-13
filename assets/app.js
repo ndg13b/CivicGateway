@@ -53,18 +53,19 @@ function safeUrl(u, allowed = ["http:", "https:"]) {
 
 /* ---------- Data loading ---------- */
 
-async function loadData() {
-  showStatus("Loading available areas…");
+const FETCH_TIMEOUT_MS = 8000;
 
-  if (!CONFIG.supabaseUrl || !CONFIG.supabaseKey) {
-    showError("This page is not configured: CIVIC_CONFIG is missing its Supabase URL or key.");
-    return;
-  }
+function withTimeout(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error("timed out")), ms)),
+  ]);
+}
 
+async function fetchFromSupabase() {
   const supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
-  const { data, error } = await supabase
-    .from("jurisdictions")
-    .select(`
+  const { data, error } = await withTimeout(
+    supabase.from("jurisdictions").select(`
       *,
       officials(*),
       elections(
@@ -75,15 +76,46 @@ async function loadData() {
           resources:resources_race_id_fkey(*)
         )
       )
-    `);
+    `),
+    FETCH_TIMEOUT_MS,
+  );
+  if (error) throw new Error(error.message);
+  if (!data || !data.length) throw new Error("no rows returned");
+  return data;
+}
 
-  if (error) {
-    showError(`We couldn't load the data (${error.message}). This is usually temporary.`);
+// Snapshot shipped with the site, used when the database is unreachable so
+// visitors still get (slightly less fresh) information instead of an error.
+async function fetchFallback() {
+  const res = await fetch(CONFIG.fallbackDataUrl || "assets/fallback-data.json");
+  if (!res.ok) throw new Error(`fallback fetch failed (${res.status})`);
+  const json = await res.json();
+  if (!json.jurisdictions || !json.jurisdictions.length) throw new Error("fallback is empty");
+  return json.jurisdictions;
+}
+
+async function loadData() {
+  showStatus("Loading available areas…");
+
+  if (!CONFIG.supabaseUrl || !CONFIG.supabaseKey) {
+    showError("This page is not configured: CIVIC_CONFIG is missing its Supabase URL or key.");
     return;
   }
-  if (!data || !data.length) {
-    showError("The database is reachable but has no areas in it yet.");
-    return;
+
+  let data;
+  let usedFallback = false;
+  try {
+    data = await fetchFromSupabase();
+  } catch (dbErr) {
+    console.warn("Database unavailable, trying offline snapshot:", dbErr.message);
+    try {
+      data = await fetchFallback();
+      usedFallback = true;
+    } catch (fbErr) {
+      console.warn("Fallback unavailable:", fbErr.message);
+      showError("We couldn't load the data right now. This is usually temporary.");
+      return;
+    }
   }
 
   PLACES = {};
@@ -141,6 +173,11 @@ async function loadData() {
   }
 
   hideStatus();
+  if (usedFallback) {
+    const el = $("status");
+    el.hidden = false;
+    el.innerHTML = `<span>Live updates are temporarily unavailable — showing our most recently saved copy of this information.</span>`;
+  }
   populateStates();
   restoreFromHash();
 }

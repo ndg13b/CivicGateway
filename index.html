@@ -3,272 +3,92 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Civic Gateway — Sample Ballots & Elected Officials</title>
-<meta name="description" content="Civic Gateway is a nonpartisan tool to find your sample ballot and current elected officials. Now serving St. Louis County, Missouri.">
-<!-- Social sharing preview (Open Graph + Twitter) -->
-<meta property="og:title" content="Civic Gateway — Sample Ballots & Elected Officials">
-<meta property="og:description" content="Find your sample ballot and current elected officials. Nonpartisan and volunteer-run.">
+<title>Civic Gateway — Find Your Elections &amp; Elected Officials</title>
+<meta name="description" content="Civic Gateway is a nonpartisan, volunteer-run tool to find upcoming local elections and your current elected officials. Serving St. Louis County, Missouri.">
+<meta property="og:title" content="Civic Gateway — Elections &amp; Elected Officials">
+<meta property="og:description" content="Find upcoming local elections and your current elected officials. Nonpartisan and volunteer-run.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://ndg13b.github.io/CivicGateway/">
+<meta property="og:url" content="https://civicgateway.org/">
 <meta name="twitter:card" content="summary">
-<!-- Emoji favicon (the little tab icon) -->
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🗳️</text></svg>">
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; color: #2d3748; }
-  .container { max-width: 900px; margin: 0 auto; }
-  .card { background: #fff; border-radius: 12px; padding: 30px; margin-bottom: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-  h1 { font-size: 2rem; margin-bottom: 6px; }
-  .subtitle { color: #718096; }
-  h2 { font-size: 1.4rem; margin-bottom: 18px; }
-  label { display: block; font-size: .85rem; font-weight: 600; color: #4a5568; margin-bottom: 6px; }
-  .input-group { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-  select { width: 100%; padding: 12px 14px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 1rem; background: #fff; }
-  select:focus { outline: none; border-color: #667eea; }
-  select:disabled { background: #f7fafc; color: #a0aec0; cursor: not-allowed; }
-  button { background: #667eea; color: #fff; border: none; padding: 14px 28px; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all .2s; }
-  button:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102,126,234,.4); }
-  button:disabled { background: #cbd5e0; cursor: not-allowed; transform: none; box-shadow: none; }
-  .results { display: none; } .results.active { display: block; }
-  .banner { background: #f7fafc; border-left: 4px solid #667eea; padding: 18px 20px; margin-bottom: 22px; border-radius: 8px; }
-  .banner h3 { margin-bottom: 4px; } .banner .meta { color: #718096; font-size: .95rem; }
-  .city-links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-  .race { margin-bottom: 22px; }
-  .race-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 10px; color: #4a5568; display: inline-flex; align-items: center; gap: 8px; }
-  .race-title.clickable { cursor: pointer; color: #667eea; }
-  .race-title.clickable:hover { text-decoration: underline; }
-  .tag { font-size: .68rem; font-weight: 700; background: #e9d8fd; color: #6b46c1; padding: 2px 8px; border-radius: 10px; letter-spacing: .02em; }
-  .candidates { display: grid; gap: 12px; }
-  .candidate-card { background: #f7fafc; border: 2px solid #e2e8f0; border-radius: 8px; padding: 16px; cursor: pointer; transition: all .2s; }
-  .candidate-card:hover { border-color: #667eea; transform: translateX(4px); box-shadow: 0 4px 12px rgba(102,126,234,.2); }
-  .candidate-name { font-weight: 600; font-size: 1.05rem; }
-  .candidate-party { color: #718096; font-size: .9rem; margin: 4px 0 10px; }
-  .links { display: flex; gap: 8px; flex-wrap: wrap; }
-  .link { display: inline-flex; align-items: center; gap: 4px; color: #667eea; text-decoration: none; font-size: .82rem; padding: 4px 10px; background: #fff; border-radius: 6px; border: 1px solid #e2e8f0; transition: all .15s; }
-  .link:hover { background: #667eea; color: #fff; border-color: #667eea; }
-  .empty { text-align: center; padding: 6px 0 18px; color: #718096; }
-  .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 1000; padding: 20px; }
-  .modal.active { display: flex; align-items: center; justify-content: center; }
-  .modal-content { background: #fff; border-radius: 12px; padding: 30px; max-width: 600px; width: 100%; max-height: 90vh; overflow-y: auto; position: relative; }
-  .close { position: absolute; top: 16px; right: 16px; font-size: 1.5rem; background: none; border: none; color: #718096; cursor: pointer; padding: 4px 10px; }
-  .modal h3 { font-size: 1.5rem; margin-bottom: 6px; }
-  .modal .party { color: #667eea; font-weight: 600; margin-bottom: 16px; }
-  .modal p { line-height: 1.6; color: #4a5568; margin-bottom: 14px; }
-  .modal h4 { margin: 18px 0 8px; font-size: .95rem; color: #2d3748; }
-  @media (max-width: 640px) { .input-group { grid-template-columns: 1fr; } h1 { font-size: 1.5rem; } }
-  .footer { text-align: center; color: #718096; font-size: .9rem; line-height: 1.6; }
-  .footer .disclaimer { margin-bottom: 16px; }
-  .kofi-btn { display: inline-flex; align-items: center; gap: 8px; background: #29abe0; color: #fff; text-decoration: none; padding: 12px 22px; border-radius: 8px; font-weight: 600; font-size: .95rem; transition: all .2s; }
-  .kofi-btn:hover { background: #1f93c4; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(41,171,224,.4); }
-</style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%231b2a4a'/%3E%3Cpath d='M14 50 C14 26 24 14 32 14 C40 14 50 26 50 50 L43 50 C43 30 37 21 32 21 C27 21 21 30 21 50 Z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/styles.css">
 </head>
 <body>
-<div class="container">
-  <div class="card">
-    <h1>🗳️ Civic Gateway</h1>
-    <p class="subtitle">Your way in to local elections. Select your location to see upcoming races or your current elected officials.</p>
-  </div>
-  <div class="card">
-    <h2>Choose Your Location</h2>
-    <div class="input-group">
-      <div><label for="state">State</label><select id="state" onchange="onStateChange()"><option value="">Select a state…</option></select></div>
-      <div><label for="city">City / Jurisdiction</label><select id="city" disabled onchange="onCityChange()"><option value="">Select a state first</option></select></div>
-    </div>
-    <button id="findBtn" disabled onclick="findBallot()">Show My Ballot &amp; Officials</button>
-  </div>
-  <div class="card results" id="results"></div>
 
-  <div class="card footer">
-    <p class="disclaimer">This is a nonpartisan, volunteer-run resource. We do not endorse any candidate, party, or ballot measure. Official information comes from each city's website; please verify details with your local election authority before voting.</p>
-    <p style="margin-bottom:14px">Data last reviewed: May 2026 · <a href="https://github.com/ndg13b/CivicGateway/issues" target="_blank" rel="noopener" style="color:#667eea">Report a correction</a></p>
-    <p style="margin-bottom:14px">Find this useful? You can help keep it running and growing.</p>
-    <a class="kofi-btn" href="https://ko-fi.com/nicholasgray" target="_blank" rel="noopener">☕ Support this project</a>
+<header class="site-header">
+  <div class="inner">
+    <a class="brand" href="https://civicgateway.org/" aria-label="Civic Gateway home">
+      <svg class="brand-mark" width="38" height="38" viewBox="0 0 64 64" aria-hidden="true">
+        <rect width="64" height="64" rx="12" fill="#ffffff" fill-opacity="0.12"/>
+        <path d="M14 50 C14 26 24 14 32 14 C40 14 50 26 50 50 L43 50 C43 30 37 21 32 21 C27 21 21 30 21 50 Z" fill="#fff"/>
+      </svg>
+      <span>
+        <span class="brand-name">Civic Gateway</span>
+        <span class="brand-tag">Your way in to local elections</span>
+      </span>
+    </a>
+    <div class="header-badges">
+      <span class="badge">Nonpartisan</span>
+      <span class="badge">Volunteer-run</span>
+    </div>
   </div>
-</div>
-<div class="modal" id="modal"><div class="modal-content"><button class="close" onclick="closeModal()">×</button><div id="modalBody"></div></div></div>
+</header>
+
+<main>
+  <div class="intro">
+    <h1>See what's on your ballot — and who represents you now.</h1>
+    <p>Choose your city to see upcoming local elections with candidate information,
+    or your current elected officials with direct contact links when no election is scheduled.</p>
+  </div>
+
+  <div class="card">
+    <div class="picker-row">
+      <div class="field">
+        <label for="state">State</label>
+        <select id="state" disabled><option value="">Loading…</option></select>
+      </div>
+      <div class="field">
+        <label for="city">City / Jurisdiction</label>
+        <select id="city" disabled><option value="">Loading…</option></select>
+      </div>
+    </div>
+    <p class="picker-hint">Only areas with verified information appear in these menus.
+    Coverage currently focuses on St. Louis County, Missouri, and is growing.</p>
+    <div id="status" class="status" hidden></div>
+  </div>
+
+  <div class="card results" id="results" aria-live="polite"></div>
+</main>
+
+<dialog class="person-dialog" id="personDialog" aria-labelledby="dialogBody">
+  <button type="button" class="dialog-close" id="dialogClose" aria-label="Close">×</button>
+  <div class="dialog-body" id="dialogBody"></div>
+</dialog>
+
+<footer class="site-footer">
+  <div class="inner">
+    <p class="disclaimer">Civic Gateway is a nonpartisan, volunteer-run resource. We do not
+    endorse any candidate, party, or ballot measure. Information is compiled from each
+    city's official website; please verify details with your local election authority
+    before voting.</p>
+    <div class="footer-meta">
+      <span>Data last reviewed: May 2026</span>
+      <a href="https://github.com/ndg13b/CivicGateway/issues" target="_blank" rel="noopener">Report a correction</a>
+      <a href="https://github.com/ndg13b/CivicGateway" target="_blank" rel="noopener">Source code</a>
+      <a href="https://ko-fi.com/nicholasgray" target="_blank" rel="noopener">Support this project</a>
+    </div>
+  </div>
+</footer>
 
 <script>
-/* ============================================================
-   DATA LAYER — the only part you edit to add/update places.
-   All officials below are REAL, pulled from each city's official
-   website (May 2026). Two optional features are wired in but
-   dormant until you add data for them:
-     • race.resources  -> makes a ballot item's title clickable,
-                          opening debate videos / info links
-     • person.interviews -> shows interview links on their page
-   See the commented TEMPLATE at the bottom for how to use them.
-   ============================================================ */
-const BALLOT_DATA = {
-  "Maryland Heights, MO": {
-    county: "St. Louis County",
-    cityWebsite: "https://www.marylandheights.com/",
-    citySocial: { twitter: "CityofMH", facebook: "cityofmarylandheights", instagram: "marylandheightsmo", youtube: "https://www.youtube.com/channel/UCIc7CM_0RP8TJSjRYHjZ19A" },
-    upcomingElection: null,
-    nextElectionNote: "The most recent municipal election was April 7, 2026. The next regular municipal election is expected April 2027, when one City Council seat in each ward is up. Candidate details will appear here once filing opens.",
-    currentOfficials: [
-      { name: "Mike Moeller", office: "Mayor", party: "Nonpartisan", term: "Four-year term", bio: "Mayor of Maryland Heights; presides over City Council meetings.", email: "mmoeller@marylandheights.com", phone: "314-878-6730" },
-      { name: "Abigail Dannegger", office: "City Council — Ward 1", party: "Nonpartisan", term: "Two-year term", email: "adannegger@marylandheights.com", phone: "314-619-2450" },
-      { name: "Susan Taylor", office: "City Council — Ward 1", party: "Nonpartisan", term: "Two-year term", email: "staylor@marylandheights.com", phone: "314-484-7627" },
-      { name: "Howard Abrams", office: "City Council — Ward 2", party: "Nonpartisan", term: "Two-year term", email: "habrams@marylandheights.com", phone: "314-432-0814" },
-      { name: "Kim Baker", office: "City Council — Ward 2", party: "Nonpartisan", term: "Two-year term", email: "kbaker@marylandheights.com", phone: "314-952-1702" },
-      { name: "Chuck Caverly", office: "City Council — Ward 3", party: "Nonpartisan", term: "Two-year term", email: "ccaverly@marylandheights.com", phone: "314-566-0424" },
-      { name: "Nancy Medvick", office: "City Council — Ward 3 (President Pro-Tem)", party: "Nonpartisan", term: "Two-year term", email: "nmedvick@marylandheights.com", phone: "314-703-8987" },
-      { name: "Steve Borgmann", office: "City Council — Ward 4", party: "Nonpartisan", term: "Two-year term", email: "sborgmann@marylandheights.com", phone: "314-393-9448" },
-      { name: "Norm Rhea", office: "City Council — Ward 4", party: "Nonpartisan", term: "Two-year term", email: "nrhea@marylandheights.com", phone: "314-739-0096" }
-    ]
-  },
-
-  "Creve Coeur, MO": {
-    county: "St. Louis County",
-    cityWebsite: "https://crevecoeurmo.gov/",
-    citySocial: { facebook: "", twitter: "", instagram: "" },
-    upcomingElection: null,
-    nextElectionNote: "Council members serve staggered two-year terms; the mayor serves a three-year term. Council seats in each ward come up at the regular April municipal election. Candidate details will appear here once filing opens.",
-    currentOfficials: [
-      { name: "Robert Hoffman", office: "Mayor", party: "Nonpartisan", term: "Three-year term", bio: "Mayor of Creve Coeur, elected April 2021 after serving on the City Council 2010–2021.", website: "https://crevecoeurmo.gov/318/Mayor-Robert-Hoffman", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "Mark Manlin", office: "City Council — Ward 1", party: "Nonpartisan", website: "https://crevecoeurmo.gov/319/Mark-Manlin---Ward-1", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "Donna Spence", office: "City Council — Ward 1", party: "Nonpartisan", website: "https://crevecoeurmo.gov/320/Donna-Spence---Ward-1", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "Nicole Greer", office: "City Council — Ward 2", party: "Nonpartisan", website: "https://crevecoeurmo.gov/321/Nicole-Greer---Ward-2", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "Kim Norwood", office: "City Council — Ward 2", party: "Nonpartisan", website: "https://crevecoeurmo.gov/322/Kim-Norwood---Ward-2", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "David Hoffman", office: "City Council — Ward 3", party: "Nonpartisan", website: "https://crevecoeurmo.gov/324/David-Hoffman---Ward-3", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "Drew Newman", office: "City Council — Ward 3", party: "Nonpartisan", website: "https://crevecoeurmo.gov/323/Drew-Newman---Ward-3", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "Mara Berry", office: "City Council — Ward 4", party: "Nonpartisan", website: "https://crevecoeurmo.gov/325/Mara-Berry---Ward-4", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" },
-      { name: "Scott Saunders", office: "City Council — Ward 4", party: "Nonpartisan", website: "https://crevecoeurmo.gov/326/Scott-Saunders---Ward-4", email: "mayor-council@crevecoeurmo.gov", phone: "314-432-6000" }
-    ]
-  },
-
-  "Bridgeton, MO": {
-    county: "St. Louis County",
-    cityWebsite: "https://www.bridgetonmo.com/",
-    citySocial: {},
-    upcomingElection: null,
-    nextElectionNote: "Each ward has two council members; one seat in each ward is elected every April. Candidate details will appear here once filing opens.",
-    currentOfficials: [
-      { name: "Randy Hein", office: "Mayor", party: "Nonpartisan", bio: "Mayor of Bridgeton.", email: "rhein@bridgetonmo.gov", phone: "314-373-3811", facebook: "p/Randy-Hein-Mayor-of-Bridgeton-61556963852290" },
-      { name: "Stephen Wesche", office: "City Council — Ward 1", party: "Nonpartisan", email: "swesche@bridgetonmo.gov", phone: "314-372-8010" },
-      { name: "Robert Saettele", office: "City Council — Ward 1", party: "Nonpartisan", email: "rsaettele@bridgetonmo.gov", phone: "314-291-1131" },
-      { name: "Bakula Patel", office: "City Council — Ward 2", party: "Nonpartisan", email: "bpatel@bridgetonmo.gov", phone: "314-344-5033" },
-      { name: "Kathy Ioannou", office: "City Council — Ward 2", party: "Nonpartisan", email: "kioannou@bridgetonmo.gov", phone: "314-737-7878" },
-      { name: "Kathy Luther", office: "City Council — Ward 3", party: "Nonpartisan", email: "kluther@bridgetonmo.gov", phone: "314-209-1715" },
-      { name: "Gretchen Luke", office: "City Council — Ward 3", party: "Nonpartisan", email: "gluke@bridgetonmo.gov", phone: "314-292-9244" },
-      { name: "Joni Norris", office: "City Council — Ward 4", party: "Nonpartisan", email: "jnorris@bridgetonmo.gov", phone: "314-291-8041" },
-      { name: "Don Hood", office: "City Council — Ward 4", party: "Nonpartisan", email: "dhood@bridgetonmo.gov", phone: "314-716-3599" }
-    ]
-  }
-
-  /* ---- TEMPLATE: an election WITH debate videos + candidate interviews ----
-  ,"Example City, MO": {
-    county: "St. Louis County",
-    cityWebsite: "",
-    upcomingElection: {
-      name: "Municipal General Election",
-      date: "April 6, 2027",
-      races: [
-        {
-          title: "Mayor",
-          resources: {                                  // makes the title clickable
-            debates: [ { title: "Candidate Forum (full video)", url: "https://youtube.com/watch?v=..." } ],
-            info:    [ { title: "League of Women Voters guide", url: "https://..." } ]
-          },
-          candidates: [
-            { name: "Jane Doe", party: "Nonpartisan", bio: "...",
-              website: "https://...", facebook: "janedoe", twitter: "@janedoe",
-              interviews: [ { title: "KMOV interview", url: "https://..." } ] }
-          ]
-        }
-      ]
-    },
-    currentOfficials: []
-  }
-  ------------------------------------------------------------------------ */
-};
-/* ============================================================ END DATA LAYER ============================================================ */
-
-const STATE_NAMES = { MO: "Missouri", IL: "Illinois" };
-function citiesByState() { const m = {}; Object.keys(BALLOT_DATA).forEach(k => { const s = k.split(", ")[1]; (m[s] = m[s] || []).push(k); }); return m; }
-function populateStates() { const sel = document.getElementById("state"); Object.keys(citiesByState()).sort().forEach(s => { const o = document.createElement("option"); o.value = s; o.textContent = STATE_NAMES[s] || s; sel.appendChild(o); }); }
-function onStateChange() {
-  const st = document.getElementById("state").value, citySel = document.getElementById("city");
-  document.getElementById("findBtn").disabled = true; citySel.innerHTML = "";
-  if (!st) { citySel.disabled = true; citySel.innerHTML = '<option value="">Select a state first</option>'; return; }
-  citySel.disabled = false; citySel.innerHTML = '<option value="">Select a city…</option>';
-  citiesByState()[st].sort().forEach(k => { const o = document.createElement("option"); o.value = k; o.textContent = k.split(", ")[0]; citySel.appendChild(o); });
-}
-function onCityChange() { document.getElementById("findBtn").disabled = !document.getElementById("city").value; }
-
-let CURRENT = null;  // holds the selected jurisdiction so modals can look up resources
-
-function findBallot() {
-  const key = document.getElementById("city").value, data = BALLOT_DATA[key];
-  if (!data) return; CURRENT = data;
-  const results = document.getElementById("results");
-  if (data.upcomingElection) {
-    const e = data.upcomingElection;
-    results.innerHTML = `<div class="banner"><h3>${e.name}</h3><p class="meta">📅 ${e.date} · ${key}</p>${cityLinksRow(data)}</div>` + e.races.map(renderRace).join("");
-  } else {
-    results.innerHTML = `<div class="banner"><h3>No election currently scheduled</h3><p class="meta">${key}${data.county ? " · " + data.county : ""}</p>${cityLinksRow(data)}</div>`
-      + (data.nextElectionNote ? `<div class="empty"><p>${data.nextElectionNote}</p></div>` : "")
-      + `<div class="race"><div class="race-title">Your Current Elected Officials</div><div class="candidates">${(data.currentOfficials || []).map(renderCandidate).join("")}</div></div>`;
-  }
-  results.classList.add("active"); results.scrollIntoView({ behavior: "smooth" });
-}
-
-function cityLinksRow(d) {
-  const s = d.citySocial || {}; let o = "";
-  if (d.cityWebsite) o += `<a class="link" href="${d.cityWebsite}" target="_blank" rel="noopener">🌐 City Website</a>`;
-  if (s.twitter)   o += `<a class="link" href="https://twitter.com/${s.twitter}" target="_blank" rel="noopener">𝕏 @${s.twitter}</a>`;
-  if (s.facebook)  o += `<a class="link" href="https://facebook.com/${s.facebook}" target="_blank" rel="noopener">📘 Facebook</a>`;
-  if (s.instagram) o += `<a class="link" href="https://instagram.com/${s.instagram}" target="_blank" rel="noopener">📷 Instagram</a>`;
-  if (s.youtube)   o += `<a class="link" href="${s.youtube}" target="_blank" rel="noopener">▶️ YouTube</a>`;
-  return o ? `<div class="city-links">${o}</div>` : "";
-}
-
-function renderRace(race, i) {
-  const hasResources = race.resources && ((race.resources.debates||[]).length || (race.resources.info||[]).length);
-  const titleHtml = hasResources
-    ? `<div class="race-title clickable" onclick="openRaceInfo(${i})">${race.title} <span class="tag">▶ DEBATES &amp; INFO</span></div>`
-    : `<div class="race-title">${race.title}</div>`;
-  return `<div class="race">${titleHtml}${race.description ? `<p class="meta" style="margin-bottom:10px">${race.description}</p>` : ""}<div class="candidates">${race.candidates.map(renderCandidate).join("")}</div></div>`;
-}
-
-function renderCandidate(c) {
-  return `<div class="candidate-card" onclick='openModal(${JSON.stringify(c).replace(/'/g, "&apos;")})'><div class="candidate-name">${c.name}</div><div class="candidate-party">${c.office ? c.office + " · " : ""}${c.party || ""}</div><div class="links">${contactLinks(c)}</div></div>`;
-}
-
-function contactLinks(c) {
-  let o = ""; const stop = 'onclick="event.stopPropagation()" target="_blank" rel="noopener"';
-  if (c.website)  o += `<a class="link" href="${c.website}" ${stop}>🌐 Website</a>`;
-  if (c.email)    o += `<a class="link" href="mailto:${c.email}" onclick="event.stopPropagation()">✉️ Email</a>`;
-  if (c.phone)    o += `<a class="link" href="tel:${c.phone.replace(/[^0-9]/g,'')}" onclick="event.stopPropagation()">📞 ${c.phone}</a>`;
-  if (c.twitter)  o += `<a class="link" href="https://twitter.com/${c.twitter.replace('@','')}" ${stop}>𝕏 ${c.twitter}</a>`;
-  if (c.facebook) o += `<a class="link" href="https://facebook.com/${c.facebook}" ${stop}>📘 Facebook</a>`;
-  return o;
-}
-
-function openModal(c) {
-  let interviews = "";
-  if (c.interviews && c.interviews.length) interviews = `<h4>Interviews &amp; coverage</h4><div class="links">${c.interviews.map(v => `<a class="link" href="${v.url}" target="_blank" rel="noopener">🎤 ${v.title}</a>`).join("")}</div>`;
-  document.getElementById("modalBody").innerHTML =
-    `<h3>${c.name}</h3><div class="party">${c.office || ""}${c.party ? " · " + c.party : ""}${c.term ? " · " + c.term : ""}</div>`
-    + (c.bio ? `<p>${c.bio}</p>` : "")
-    + `<h4>Contact &amp; links</h4><div class="links">${contactLinks(c) || '<span style="color:#a0aec0;font-size:.9rem">No links available</span>'}</div>`
-    + interviews;
-  document.getElementById("modal").classList.add("active");
-}
-
-function openRaceInfo(i) {
-  const race = CURRENT.upcomingElection.races[i], r = race.resources || {};
-  const sec = (label, arr, icon) => (arr && arr.length) ? `<h4>${label}</h4><div class="links">${arr.map(x => `<a class="link" href="${x.url}" target="_blank" rel="noopener">${icon} ${x.title}</a>`).join("")}</div>` : "";
-  document.getElementById("modalBody").innerHTML =
-    `<h3>${race.title}</h3><div class="party">Ballot item · debates &amp; information</div>`
-    + sec("Debate &amp; forum videos", r.debates, "▶️")
-    + sec("Voter information", r.info, "📄");
-  document.getElementById("modal").classList.add("active");
-}
-
-function closeModal() { document.getElementById("modal").classList.remove("active"); }
-document.getElementById("modal").addEventListener("click", e => { if (e.target.id === "modal") closeModal(); });
-populateStates();
+  window.CIVIC_CONFIG = {
+    supabaseUrl: "https://juloefnbmbyhzdzyijug.supabase.co",
+    // Public read-only key: Row Level Security allows SELECT and nothing else.
+    supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp1bG9lZm5ibWJ5aHpkenlpanVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NzkzNDUsImV4cCI6MjA5OTQ1NTM0NX0.bK_BP0ckOy_aJk-CPFHelEfkXTirCyowPIpEIVHXGso",
+    fallbackDataUrl: "assets/fallback-data.json",
+  };
 </script>
+<script type="module" src="assets/app.js"></script>
+
 </body>
 </html>
