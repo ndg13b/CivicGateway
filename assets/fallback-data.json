@@ -1,5 +1,5 @@
 {
-  "_comment": "Offline snapshot of the database, served if Supabase is unreachable. Same shape as the app's Supabase query result. Regenerate when the database changes. Last synced: July 2026 (matches seed.sql + migrations/002-seed-districts.sql).",
+  "_comment": "Offline snapshot of the database, served if Supabase is unreachable. Same shape as the app's Supabase query result. Regenerate when the database changes. Last synced: July 2026 (matches seed.sql + migrations 002-003).",
   "jurisdictions": [
     {
       "name": "Maryland Heights",
@@ -631,6 +631,320 @@
                 "term": "Two-year term (since Jan 2025)",
                 "bio": "State Representative for District 70, which includes Bridgeton, Hazelwood, and part of Maryland Heights. Retired U.S. Air Force lieutenant colonel and certified teacher.",
                 "website": "https://house.mo.gov/MemberDetails.aspx?district=070",
+                "sort_order": 0
+              }
+            ],
+            "elections": [
+              {
+                "name": "General Election",
+                "election_date": "2026-11-03"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Town and Country",
+      "state": "MO",
+      "county": "St. Louis County",
+      "city_website": "https://www.town-and-country.org/",
+      "next_election_note": "The Board of Aldermen has two members per ward; municipal elections are held in April. Candidate details will appear here once filing opens. The full board can be reached at CityCouncil@town-and-country.org.",
+      "officials": [
+        {
+          "name": "Charles H. Rehm, Jr.",
+          "office": "Mayor",
+          "party": "Nonpartisan",
+          "email": "TCmayor@town-and-country.org",
+          "phone": "314-413-2937",
+          "sort_order": 0
+        },
+        {
+          "name": "Barbara Ann Hughes",
+          "office": "Board of Aldermen — Ward 1",
+          "party": "Nonpartisan",
+          "email": "barbhugs1954@gmail.com",
+          "phone": "314-872-8228",
+          "sort_order": 1
+        },
+        {
+          "name": "Ben Schwoerer",
+          "office": "Board of Aldermen — Ward 1",
+          "party": "Nonpartisan",
+          "email": "tandcward1@gmail.com",
+          "phone": "314-712-2802",
+          "sort_order": 2
+        },
+        {
+          "name": "Al Gerber",
+          "office": "Board of Aldermen — Ward 2",
+          "party": "Nonpartisan",
+          "email": "algerber4ward2@gmail.com",
+          "phone": "314-409-4727",
+          "sort_order": 3
+        },
+        {
+          "name": "Michelle Friedman",
+          "office": "Board of Aldermen — Ward 2",
+          "party": "Nonpartisan",
+          "email": "michellefriedman.ward2@gmail.com",
+          "phone": "314-920-9163",
+          "sort_order": 4
+        },
+        {
+          "name": "John Harder",
+          "office": "Board of Aldermen — Ward 3",
+          "party": "Nonpartisan",
+          "email": "tryharderforward3@gmail.com",
+          "phone": "314-910-0969",
+          "sort_order": 5
+        },
+        {
+          "name": "Joe Kinsella",
+          "office": "Board of Aldermen — Ward 3",
+          "party": "Nonpartisan",
+          "email": "kinsella23ward3@gmail.com",
+          "phone": "314-374-6673",
+          "sort_order": 6
+        },
+        {
+          "name": "Michael Sawyer",
+          "office": "Board of Aldermen — Ward 4",
+          "party": "Nonpartisan",
+          "email": "sawyer4ward4@gmail.com",
+          "phone": "314-329-7710",
+          "sort_order": 7
+        },
+        {
+          "name": "David Murphy",
+          "office": "Board of Aldermen — Ward 4",
+          "party": "Nonpartisan",
+          "email": "murphy4alderman@gmail.com",
+          "phone": "636-686-0563",
+          "sort_order": 8
+        }
+      ],
+      "elections": [],
+      "jurisdiction_districts": [
+        {
+          "partial": false,
+          "districts": {
+            "level": "us_house",
+            "name": "Missouri's 2nd Congressional District",
+            "short_name": "MO-2",
+            "state": "MO",
+            "info_url": "https://wagner.house.gov/",
+            "sort_order": 1,
+            "officials": [
+              {
+                "name": "Ann Wagner",
+                "office": "U.S. Representative — MO-2",
+                "party": "Republican",
+                "term": "Two-year term (serving since 2013)",
+                "bio": "U.S. Representative for Missouri's 2nd Congressional District, covering much of western and southern St. Louis County.",
+                "website": "https://wagner.house.gov/",
+                "sort_order": 0
+              }
+            ],
+            "elections": [
+              {
+                "name": "General Election",
+                "election_date": "2026-11-03"
+              }
+            ]
+          }
+        },
+        {
+          "partial": true,
+          "districts": {
+            "level": "state_house",
+            "name": "Missouri House District 89",
+            "short_name": "House 89",
+            "state": "MO",
+            "info_url": "https://house.mo.gov/MemberDetails.aspx?district=089",
+            "sort_order": 23,
+            "officials": [
+              {
+                "name": "George Hruza",
+                "office": "State Representative — District 89",
+                "party": "Republican",
+                "term": "Two-year term (since Jan 2025)",
+                "bio": "State Representative for District 89, which includes parts of Des Peres, Town and Country, and Chesterfield.",
+                "website": "https://house.mo.gov/MemberDetails.aspx?district=089",
+                "sort_order": 0
+              }
+            ],
+            "elections": [
+              {
+                "name": "General Election",
+                "election_date": "2026-11-03"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Overland",
+      "state": "MO",
+      "county": "St. Louis County",
+      "city_website": "https://overlandmo.org/",
+      "next_election_note": "Council terms are staggered, expiring in April 2027 and April 2028 by seat; municipal elections are held in April. Candidate details will appear here once filing opens.",
+      "officials": [
+        {
+          "name": "Marty A. Little",
+          "office": "Mayor",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2030",
+          "sort_order": 0
+        },
+        {
+          "name": "Beth Ruckman",
+          "office": "City Council — Ward 1",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2027",
+          "email": "bethruckman@overlandmo.org",
+          "phone": "314-913-0841",
+          "sort_order": 1
+        },
+        {
+          "name": "Patrick Wroblewski",
+          "office": "City Council — Ward 1",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2028",
+          "email": "patrickw@overlandmo.org",
+          "phone": "314-313-2620",
+          "sort_order": 2
+        },
+        {
+          "name": "Karen Stiebel",
+          "office": "City Council — Ward 2",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2027",
+          "email": "karens@overlandmo.org",
+          "phone": "314-409-4934",
+          "sort_order": 3
+        },
+        {
+          "name": "Lee Furnace",
+          "office": "City Council — Ward 2",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2028",
+          "email": "leefurnace@overlandmo.org",
+          "sort_order": 4
+        },
+        {
+          "name": "Jessica Requejo",
+          "office": "City Council — Ward 3",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2028",
+          "email": "jessicar@overlandmo.org",
+          "phone": "314-441-6364",
+          "sort_order": 5
+        },
+        {
+          "name": "Leslie Ferguson",
+          "office": "City Council — Ward 3",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2027",
+          "email": "l.ferguson@overlandmo.org",
+          "phone": "314-609-0179",
+          "sort_order": 6
+        },
+        {
+          "name": "Larry Bennett",
+          "office": "City Council — Ward 4",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2027",
+          "email": "lbennett@overlandmo.org",
+          "phone": "314-629-2221",
+          "sort_order": 7
+        },
+        {
+          "name": "Kirby Barnard",
+          "office": "City Council — Ward 4",
+          "party": "Nonpartisan",
+          "term": "Term expires April 2028",
+          "email": "kirbybarnard@overlandmo.org",
+          "phone": "314-423-0267",
+          "sort_order": 8
+        }
+      ],
+      "elections": [],
+      "jurisdiction_districts": [
+        {
+          "partial": false,
+          "districts": {
+            "level": "us_house",
+            "name": "Missouri's 1st Congressional District",
+            "short_name": "MO-1",
+            "state": "MO",
+            "info_url": "https://bell.house.gov/",
+            "sort_order": 0,
+            "officials": [
+              {
+                "name": "Wesley Bell",
+                "office": "U.S. Representative — MO-1",
+                "party": "Democratic",
+                "term": "Two-year term (since Jan 2025)",
+                "bio": "U.S. Representative for Missouri's 1st Congressional District, which includes all of St. Louis City and much of northern St. Louis County. Former St. Louis County Prosecuting Attorney.",
+                "website": "https://bell.house.gov/",
+                "sort_order": 0
+              }
+            ],
+            "elections": [
+              {
+                "name": "General Election",
+                "election_date": "2026-11-03"
+              }
+            ]
+          }
+        },
+        {
+          "partial": false,
+          "districts": {
+            "level": "state_senate",
+            "name": "Missouri Senate District 14",
+            "short_name": "Senate 14",
+            "state": "MO",
+            "info_url": "https://www.senate.mo.gov/Senators/Member/14",
+            "sort_order": 11,
+            "officials": [
+              {
+                "name": "Brian Williams",
+                "office": "State Senator — District 14",
+                "party": "Democratic",
+                "term": "Four-year term (since 2019)",
+                "bio": "State Senator for the 14th District in northern St. Louis County, which includes Bridgeton, St. Ann, Hazelwood, and parts of Maryland Heights.",
+                "website": "https://www.senate.mo.gov/Senators/Member/14",
+                "sort_order": 0
+              }
+            ],
+            "elections": [
+              {
+                "name": "General Election",
+                "election_date": "2026-11-03"
+              }
+            ]
+          }
+        },
+        {
+          "partial": true,
+          "districts": {
+            "level": "state_house",
+            "name": "Missouri House District 71",
+            "short_name": "House 71",
+            "state": "MO",
+            "info_url": "https://house.mo.gov/MemberDetails.aspx?district=071",
+            "sort_order": 21,
+            "officials": [
+              {
+                "name": "LaDonna Appelbaum",
+                "office": "State Representative — District 71",
+                "party": "Democratic",
+                "term": "Two-year term",
+                "bio": "State Representative for District 71, which includes portions of Creve Coeur, Maryland Heights, Chesterfield, Olivette, Overland, and unincorporated St. Louis County.",
+                "website": "https://house.mo.gov/MemberDetails.aspx?district=071",
                 "sort_order": 0
               }
             ],

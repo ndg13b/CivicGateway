@@ -89,11 +89,11 @@ skipping the primary this cycle and starting with the November general.
 
 Priority neighbors (all border current coverage):
 
-| City | Officials directory | Notes |
+| City | Officials directory | Status |
 |---|---|---|
-| Town and Country | https://www.town-and-country.org/ → Government → Board of Aldermen | Mayor + 8 aldermen (2/ward); in MO-2, Senate 24?, House 89 (Hruza) — verify |
-| Overland | https://overlandmo.org/226/City-Council | Mayor Marty A. Little (verified, term to 2030); 8 council (2/ward); in MO-1, Senate 14, House 71 (part) — verify wards/contacts from the directory |
-| St. Ann | https://www.stannmo.org/ → Government | In MO-1, Senate 14 — verify House district |
+| Town and Country | https://www.town-and-country.org/ → Government → Board of Aldermen | ✅ Added (migrations/003). TODO: its state **senate** district (moved out of 24 in redistricting; unverified) and whether more House districts cover parts of it |
+| Overland | https://overlandmo.org/226/City-Council | ✅ Added (migrations/003): MO-1, Senate 14, House 71 (part). TODO: check for additional House districts |
+| St. Ann | https://www.stannmo.org/ → Government | Roster still needed (spread across pages). In MO-1, Senate 14 — verify House district |
 
 Per-city process (same as the original three):
 1. Pull mayor + council roster **from the city's official directory page**
