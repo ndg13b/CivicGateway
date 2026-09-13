@@ -121,7 +121,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -185,7 +185,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": []
               }
             ]
@@ -215,7 +215,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": []
               }
             ]
@@ -245,7 +245,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -295,7 +295,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -343,7 +343,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": []
               }
             ]
@@ -468,7 +468,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -532,7 +532,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -589,7 +589,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": []
               }
             ]
@@ -619,7 +619,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -753,7 +753,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -817,7 +817,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": []
               }
             ]
@@ -847,7 +847,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -981,7 +981,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -1038,7 +1038,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": []
               }
             ]
@@ -1158,7 +1158,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -1222,7 +1222,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": []
               }
             ]
@@ -1252,7 +1252,7 @@
               {
                 "name": "General Election",
                 "election_date": "2026-11-03",
-                "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+                "note": null,
                 "races": [
                   {
                     "kind": "office",
@@ -1292,7 +1292,7 @@
         {
           "name": "General Election",
           "election_date": "2026-11-03",
-          "note": "Candidates reflect unofficial results from the August 4, 2026 primary. Results are certified by the state in the weeks afterward.",
+          "note": null,
           "races": [
             {
               "kind": "office",

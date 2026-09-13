@@ -60,6 +60,64 @@ const LEVEL_LABELS = {
 
 const LOOKUP_LINKS = `<a href="https://house.mo.gov/legislatorlookup.aspx" target="_blank" rel="noopener">Look up your Missouri legislators</a> · <a href="https://ziplook.house.gov/htbin/findrep_house" target="_blank" rel="noopener">Find your U.S. representative</a>`;
 
+// Shown in the masthead dateline and the footer. One constant so the two can
+// never drift apart — they did, and sat three weeks stale.
+const DATA_REVIEWED = "September 2026";
+
+/* ---------- Voting logistics ----------
+   Knowing what is on the ballot is only half of it; the other half is knowing
+   how and by when to vote. Keyed by state, then by election date, so November
+   deadlines cannot leak onto an April municipal ballot.
+
+   This lives in code rather than the database because these are state-level
+   statutory dates, not per-jurisdiction data. If a second state is ever added
+   it moves to a table; the shape here is already the shape of that table.
+
+   ⚠ EVERY DATE AND URL BELOW MUST BE VERIFIED against the Secretary of State
+   and the St. Louis County Board of Elections before this ships. They were
+   assembled from voter-information aggregators, not from the official source,
+   because those domains are unreachable from the build environment. Publishing
+   a wrong registration deadline could cost somebody their vote — this is the
+   one place on the site where being approximately right is not acceptable.   */
+const VOTING_GUIDE = {
+  MO: {
+    authority: "St. Louis County Board of Elections",
+    authorityUrl: "https://stlouiscountymo.gov/st-louis-county-departments/board-of-elections/",
+    stateUrl: "https://www.sos.mo.gov/elections/goVoteMissouri/",
+    idNote:
+      "Missouri asks for a government-issued photo ID at the polls. If you do " +
+      "not have one, you can still cast a provisional ballot, and the state " +
+      "offers a free ID for voting.",
+    elections: {
+      "2026-11-03": {
+        pollHours: "6:00 a.m. to 7:00 p.m.",
+        dates: [
+          {
+            on: "2026-10-07",
+            label: "Register to vote",
+            detail: "The last day to register for this election. Registering later means voting in the next one.",
+          },
+          {
+            on: "2026-10-20",
+            label: "In-person absentee voting opens",
+            detail: "Vote early in person, no excuse needed, through 5:00 p.m. the day before the election.",
+          },
+          {
+            on: "2026-10-21",
+            label: "Request a mail ballot",
+            detail: "Absentee ballot requests must reach the election authority by 5:00 p.m.",
+          },
+          {
+            on: "2026-11-03",
+            label: "Election Day",
+            detail: "Bring photo ID. Polls are open 6:00 a.m. to 7:00 p.m.",
+          },
+        ],
+      },
+    },
+  },
+};
+
 let PLACES = {};      // "maryland-heights-mo" -> place view-model
 let STATEWIDE = {};   // "MO" -> [district, …] applying to every city in that state
 
@@ -106,7 +164,29 @@ function formatShortDate(iso) {
   } catch { return iso; }
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Local date, not UTC. toISOString() rolls over to tomorrow at 7 p.m. Central,
+// which would have dropped election-day contests off the page at the exact
+// moment the last voters are still in line.
+function today() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// Whole days from today to an ISO date: negative once it has passed, 0 today.
+// Built from calendar parts so daylight-saving shifts can't round it off by one.
+function daysUntil(iso) {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  const [ty, tm, td] = today().split("-").map(Number);
+  if (!y || !ty) return null;
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ty, tm - 1, td)) / 86400000);
+}
+
+function countdown(days) {
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  return `${days} days away`;
+}
 
 /* ---------- Data loading ---------- */
 
@@ -622,9 +702,11 @@ function renderCity(place) {
       <h2>${esc(place.name)}, ${esc(STATE_NAMES[place.state] || place.state)}</h2>
       ${place.county ? `<span class="county">${esc(place.county)}</span>` : ""}
     </div>
-    ${cityLinksRow(place)}`;
+    ${cityLinksRow(place)}
+    ${deadlineBanner(place)}`;
 
   html += renderBallot(place);
+  html += renderVotingInfo(place);
   html += renderWhoRepresentsYou(place);
 
   paint(html);
@@ -785,6 +867,83 @@ function renderMeasureCard(place, m, num) {
 
 function personHref(place, person) {
   return `#/city/${place.key}/person/${person.slug || slugify(person.name)}`;
+}
+
+/* ---------- Voting logistics ---------- */
+
+// The guide for the election actually being shown, or null. Never falls back
+// to "some other election's dates" — wrong dates are worse than no dates.
+function votingGuide(place) {
+  if (!place.ballot) return null;
+  const state = VOTING_GUIDE[place.state];
+  const election = state && state.elections[place.ballot.date];
+  return election ? { ...state, ...election } : null;
+}
+
+// The next deadline that hasn't passed, with how far off it is.
+function nextDeadline(guide) {
+  for (const d of guide.dates) {
+    const days = daysUntil(d.on);
+    if (days !== null && days >= 0) return { ...d, days };
+  }
+  return null;
+}
+
+// A deadline close enough to act on gets said once, loudly, above the ballot.
+// Below three weeks out, "register by October 7" stops being trivia.
+function deadlineBanner(place) {
+  const guide = votingGuide(place);
+  if (!guide) return "";
+  const next = nextDeadline(guide);
+  if (!next || next.days > 21) return "";
+  return `<div class="deadline-banner">
+      <span class="deadline-when">${esc(countdown(next.days))}</span>
+      <span class="deadline-what"><strong>${esc(next.label)}</strong> — ${esc(formatShortDate(next.on))}</span>
+      <a class="deadline-link" href="#how-to-vote">All key dates</a>
+    </div>`;
+}
+
+// Passed deadlines stay on the page, marked as passed. Hiding them would let
+// somebody assume they still have time.
+function renderVotingInfo(place) {
+  const guide = votingGuide(place);
+  if (!guide) return "";
+  const next = nextDeadline(guide);
+
+  const rows = guide.dates.map((d) => {
+    const days = daysUntil(d.on);
+    const passed = days !== null && days < 0;
+    const isNext = next && next.on === d.on;
+    const status = passed ? "Passed" : days === null ? "" : countdown(days);
+    return `<li class="vote-date${passed ? " passed" : ""}${isNext ? " next" : ""}">
+        <span class="vote-date-day">${esc(formatShortDate(d.on))}</span>
+        <span class="vote-date-body">
+          <strong>${esc(d.label)}</strong>
+          <span class="vote-date-detail">${esc(d.detail)}</span>
+        </span>
+        ${status ? `<span class="vote-date-status">${esc(status)}</span>` : ""}
+      </li>`;
+  }).join("");
+
+  const authority = safeUrl(guide.authorityUrl);
+  const state = safeUrl(guide.stateUrl);
+
+  return `
+    <section class="vote-panel" id="how-to-vote" aria-label="How to vote">
+      <div class="part-break">
+        <span class="part-eyebrow">Voter information</span>
+        <h3>How and when to vote</h3>
+        <p>Dates set by Missouri law for the ${esc(formatShortDate(place.ballot.date))}
+           election. Confirm anything time-sensitive with your election authority —
+           we are a volunteer project, not an election office.</p>
+      </div>
+      <ol class="vote-dates">${rows}</ol>
+      <p class="vote-id">${esc(guide.idNote)}</p>
+      <div class="vote-links">
+        ${authority ? `<a href="${esc(authority)}" target="_blank" rel="noopener">${esc(guide.authority)}</a>` : ""}
+        ${state ? `<a href="${esc(state)}" target="_blank" rel="noopener">Register &amp; check your registration</a>` : ""}
+      </div>
+    </section>`;
 }
 
 function renderWhoRepresentsYou(place) {
@@ -1082,6 +1241,12 @@ function route() {
 }
 
 /* ---------- Boot ---------- */
+
+// Both review stamps come from one constant; the markup carries no date of
+// its own, so a stale one can't survive in the HTML.
+for (const id of ["reviewedTop", "reviewedFoot"]) {
+  if ($(id)) $(id).textContent = DATA_REVIEWED;
+}
 
 const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
 on("state", "change", onStateChange);
