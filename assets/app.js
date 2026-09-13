@@ -82,7 +82,8 @@ const DATA_REVIEWED = "September 2026";
 const VOTING_GUIDE = {
   MO: {
     authority: "St. Louis County Board of Elections",
-    authorityUrl: "https://stlouiscountymo.gov/st-louis-county-departments/board-of-elections/",
+    authorityUrl: "https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/",
+    calendarUrl: "https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/resources-and-information/election-calendar/",
     stateUrl: "https://www.sos.mo.gov/elections/goVoteMissouri/",
     idNote:
       "Missouri asks for a government-issued photo ID at the polls. If you do " +
@@ -926,6 +927,7 @@ function renderVotingInfo(place) {
   }).join("");
 
   const authority = safeUrl(guide.authorityUrl);
+  const calendar = safeUrl(guide.calendarUrl);
   const state = safeUrl(guide.stateUrl);
 
   return `
@@ -942,6 +944,7 @@ function renderVotingInfo(place) {
       <div class="vote-links">
         ${authority ? `<a href="${esc(authority)}" target="_blank" rel="noopener">${esc(guide.authority)}</a>` : ""}
         ${state ? `<a href="${esc(state)}" target="_blank" rel="noopener">Register &amp; check your registration</a>` : ""}
+        ${calendar ? `<a href="${esc(calendar)}" target="_blank" rel="noopener">Official election calendar</a>` : ""}
       </div>
     </section>`;
 }

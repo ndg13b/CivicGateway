@@ -254,6 +254,21 @@ The build environment cannot reach `sos.mo.gov`, `stlouiscountymo.gov`,
 person with a browser. Web search reaches secondary coverage, which is not an
 acceptable source for a certified candidate list on a nonpartisan site.
 
+### Where the official sources live
+
+| What | Where |
+|---|---|
+| **Certified candidate list, Nov 3 2026** | [2026GeneralElectionCertifiedCandidates.pdf](https://www.sos.mo.gov/CMSImages/ElectionCandidates/2026GeneralElectionCertifiedCandidates.pdf) — one PDF, every state and federal contest |
+| Same list, browsable | [Candidates on the Web](https://s1.sos.mo.gov/candidatesonweb/) |
+| County offices, judicial retentions, local measures | [St. Louis County Board of Elections](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/) — the sample ballot lookup is the authority for what actually prints on a ballot |
+| Dates and deadlines | [BOE election calendar](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/resources-and-information/election-calendar/) and [state election calendar](https://www.sos.mo.gov/elections/calendar) |
+| Absentee rules | [BOE absentee voting](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/absentee-voting/) |
+| Polling places | [BOE polling places](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/polling-places/) |
+
+The SoS PDF covers statewide, congressional, and legislative contests. It does
+**not** cover county offices, judicial retention questions, or local measures —
+those only appear on the county's sample ballot. Both sources are needed.
+
 ### 7a. Voting dates — VERIFY BEFORE THESE SHIP
 
 `VOTING_GUIDE` in `assets/app.js` currently carries dates assembled from voter
@@ -281,7 +296,11 @@ Certified Aug 25, 2026. Needed as a `races` row plus `candidates` rows:
 - **Missouri House District 87** — Westport area of Maryland Heights
 - **Missouri House District 89** — part of Town and Country
 - **St. Louis County offices** — no `county` scope exists yet; needs a
-  `districts` row plus `jurisdiction_districts` rows for all five cities
+  `districts` row plus `jurisdiction_districts` rows for all five cities.
+  **County Executive is confirmed on the November 3, 2026 ballot**, so this
+  scope is required, not optional. Check the county sample ballot for the
+  other county offices alongside it. County contests are county-wide, so the
+  `jurisdiction_districts` rows carry `partial = false`.
 - **Judicial retention questions** — use `kind = 'measure'` with the verbatim
   question in `official_text`. Not Yes/No pseudo-candidates.
 - **Ballot measures** — the four constitutional amendments were on the August
