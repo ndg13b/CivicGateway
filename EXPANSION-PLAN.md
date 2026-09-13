@@ -269,46 +269,52 @@ The SoS PDF covers statewide, congressional, and legislative contests. It does
 **not** cover county offices, judicial retention questions, or local measures —
 those only appear on the county's sample ballot. Both sources are needed.
 
-### 7a. Voting dates — VERIFY BEFORE THESE SHIP
+### 7a. Voting dates — VERIFIED 13 September 2026 ✓
 
-`VOTING_GUIDE` in `assets/app.js` currently carries dates assembled from voter
--information aggregators, not from the official source. A wrong registration
-deadline could cost somebody their vote. Confirm each against the St. Louis
-County Board of Elections and the Secretary of State:
+`VOTING_GUIDE` in `assets/app.js` now matches the county's published
+2026/2027 Election Calendar and the Secretary of State's Notice of Election:
 
-| Claim in the code | Confirm |
+| Date | Event | Source |
+|---|---|---|
+| Sept 22, 8 a.m. | Absentee voting with an excuse opens | RSMo 115.279(3) |
+| **Oct 7, 5 p.m.** | **Last day to register** | RSMo 115.135(1) |
+| Oct 20, 8 a.m. | No-excuse in-person absentee opens | RSMo 115.277 |
+| Oct 21, 5 p.m. | Last day to request a mailed ballot | RSMo 115.279(3) |
+| Nov 2, 5 p.m. | Last day to vote absentee in person at the BOE | county calendar |
+| Nov 3, 6 a.m.–7 p.m. | Election Day, polls open | SoS Notice of Election |
+
+Two dates the aggregators had missed entirely — Sept 22 and Nov 2 — are now
+included. Re-verify against the calendar whenever a new election is added.
+
+### 7b. Contests — state and federal DONE, county outstanding
+
+Entered in `migrations/007-certified-november-contests.sql` from the certified
+booklet:
+
+| Contest | Certified candidates |
 |---|---|
-| Registration deadline **Oct 7, 2026** | |
-| In-person absentee opens **Oct 20, 2026** | |
-| Mail ballot request deadline **Oct 21, 2026, 5 p.m.** | |
-| Polls open **6 a.m. – 7 p.m.** on Nov 3 | |
-| Photo ID required; provisional ballot available; free state ID | |
-| Board of Elections URL resolves | |
-| `sos.mo.gov/elections/goVoteMissouri/` URL resolves | |
+| Senate 24 | LaVanna Wrobley (R) · Tracy McCreery (D, incumbent) |
+| Senate 14 | Vernon Norman (R) · Raychel Proudie (D) — open seat |
+| House 87 | Dan Hyatt (R) · Connie Steinmetz (D, incumbent) |
+| House 89 | George Hruza (R, incumbent) · Bryan Troop (D) |
+| Judicial retention | 19 questions — 1 Supreme Court, 3 Court of Appeals Eastern, 15 in the 21st Circuit |
 
-### 7b. Contests missing from the ballot
+Candidate order follows the certified booklet's party order (Republican,
+Democratic, Libertarian, Independent) throughout, including a correction to
+migration 005, which had ordered MO-1 and MO-2 inconsistently.
 
-Certified Aug 25, 2026. Needed as a `races` row plus `candidates` rows:
+**Still outstanding — only on the county sample ballot:**
 
-- **Missouri Senate District 24** — Maryland Heights, Creve Coeur
-- **Missouri Senate District 14** — Bridgeton, Overland, part of Maryland
-  Heights. First confirm District 14 is even on the 2026 cycle.
-- **Missouri House District 87** — Westport area of Maryland Heights
-- **Missouri House District 89** — part of Town and Country
-- **St. Louis County offices** — no `county` scope exists yet; needs a
-  `districts` row plus `jurisdiction_districts` rows for all five cities.
-  **County Executive is confirmed on the November 3, 2026 ballot**, so this
-  scope is required, not optional. Check the county sample ballot for the
-  other county offices alongside it. County contests are county-wide, so the
-  `jurisdiction_districts` rows carry `partial = false`.
-- **Judicial retention questions** — use `kind = 'measure'` with the verbatim
-  question in `official_text`. Not Yes/No pseudo-candidates.
-- **Ballot measures** — the four constitutional amendments were on the August
-  ballot. Confirm whether anything was referred to November.
+- **St. Louis County offices.** County Executive is confirmed on the ballot.
+  A `county` scope now exists with a November election and no races, so the
+  site tells visitors the county contests are not listed yet rather than
+  presenting an incomplete ballot as complete. Adding races to that election
+  clears the notice automatically.
+- **Any county or municipal measures**, and any constitutional amendment
+  referred to November.
 
-For each contest, capture: exact office title as printed on the sample ballot,
-every candidate with party as certified, incumbency, and `vote_for` where it
-is more than one.
+For each, capture the office title exactly as printed, every candidate with
+certified party, incumbency, and `vote_for` where it is more than one.
 
 ### 7c. Two identity questions that produce wrong pages if ignored
 

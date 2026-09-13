@@ -464,6 +464,51 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 
 /* ---------- Everything that is not the ballot ---------- */
 
+/* ---------- Judicial retention ----------
+   Set as a list, not as cards: the questions are identical except for the
+   name, so the repetition is the content. Cards would triple the height of
+   the ballot to say the same thing nineteen times. */
+
+.retention {
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  padding: var(--s4) var(--s5) var(--s5);
+}
+.retention-lead {
+  color: var(--ink-2); font-size: .94rem; max-width: var(--measure);
+  padding-bottom: var(--s3); border-bottom: 1px solid var(--rule);
+}
+.retention-lead strong { color: var(--ink); font-weight: 600; }
+.retention-court {
+  font-family: var(--font-ui);
+  font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-3);
+  margin: var(--s5) 0 var(--s2);
+}
+.retention-list { list-style: none; }
+.retention-item {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--rule);
+  min-height: 44px;
+}
+.retention-name {
+  font-family: var(--font-display);
+  font-size: 1.04rem; color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid var(--rule-strong);
+}
+.retention-name:hover { color: var(--link); border-bottom-color: var(--link); }
+.retention-yn {
+  margin-left: auto;
+  font-family: var(--font-ui);
+  font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-4); white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .retention { padding: var(--s4); }
+}
+
 /* ---------- Voting deadlines ----------
    The banner is the one place on the page allowed to be loud. It appears only
    inside three weeks of a deadline, so it stays rare enough to mean something. */
