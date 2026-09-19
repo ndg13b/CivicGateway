@@ -50,12 +50,15 @@ const BALLOT_SECTIONS = [
   { label: "County", levels: ["county"] },
   { label: "Judicial", levels: ["judicial"] },
   { label: "City", levels: ["municipal"] },
+  // School districts currently carry only measures, which close the ballot.
+  // The section is here for school board contests, which are elected in April.
+  { label: "School", levels: ["school"] },
 ];
 
 const LEVEL_LABELS = {
   us_senate: "U.S. Senate", us_house: "U.S. Congress", statewide: "Statewide office",
   state_senate: "State Senate", state_house: "State House", county: "County",
-  judicial: "Judicial", municipal: "City",
+  judicial: "Judicial", municipal: "City", school: "School district",
 };
 
 const LOOKUP_LINKS = `<a href="https://house.mo.gov/legislatorlookup.aspx" target="_blank" rel="noopener">Look up your Missouri legislators</a> · <a href="https://ziplook.house.gov/htbin/findrep_house" target="_blank" rel="noopener">Find your U.S. representative</a>`;
