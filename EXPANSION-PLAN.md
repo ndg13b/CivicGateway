@@ -148,3 +148,213 @@ within a scope.
 - For measures, link **both supporting and opposing** material where each exists.
 - Prefer official and independent sources (election authorities, League of Women
   Voters, established local news) over partisan material.
+
+## 6. Address-level district lookup (researched September 2026)
+
+The `partial` flag means a city page sometimes has to say "if you live in
+House District 87…". Resolving the visitor's actual location removes those
+splits. This section records what was tested so it doesn't have to be
+rediscovered.
+
+### It works — one request does the whole job
+
+```
+https://geocoding.geo.census.gov/geocoder/geographies/onelineaddress
+  ?address=12013+Colonial+Drive,+Maryland+Heights,+MO+63043
+  &benchmark=Public_AR_Current
+  &vintage=Current_Current
+  &layers=all
+  &format=json
+```
+
+Returns, in a single call and with no API key: congressional district, state
+senate district, state house district, incorporated place, county, unified
+school district, ZIP, and 2020 census block. The coordinates variant
+(`geographies/coordinates?x=<lon>&y=<lat>`) takes the same parameters and is
+what a browser geolocation button would use.
+
+Verified against Maryland Heights: returned MO-1, Senate 24, House 87,
+"Maryland Heights city", St. Louis County, Pattonville R-III — matching the
+hand-researched table in §1.
+
+### Four caveats, in order of how much they matter
+
+1. **Congressional boundaries lag.** The response labels them "119th
+   Congressional Districts" — the 2024 map. Missouri redrew mid-decade for
+   2026. State legislative layers are labelled "2024" and are current, but
+   **congressional results from this API must be checked against the new map**
+   before being shown for a November 2026 ballot.
+2. **Matches are interpolated, not rooftop.** A successful match returns the
+   street segment's address range (e.g. `fromAddress: 12001`,
+   `toAddress: 12069`) and a position estimated along it. Census and OSM
+   disagreed by roughly 20 m on the same house. Irrelevant in the middle of a
+   district, potentially wrong for an address sitting on a boundary.
+3. **No fuzzy matching.** A misspelled street, a wrong house number, or an
+   address that doesn't exist returns `"addressMatches":[]` with no
+   suggestion. This is the likely real-world failure mode. Three empty results
+   during testing turned out to be a bad test address, not missing coverage —
+   don't conclude "no coverage" from a single miss.
+4. **No wards or precincts.** Census has no layer for them. Only county data
+   has these.
+
+### Mailing city ≠ municipality
+
+Large parts of unincorporated St. Louis County carry a "Maryland Heights, MO"
+or "Creve Coeur, MO" postal address while belonging to no city government.
+Someone in that situation who picks a city from the dropdown would be shown
+aldermanic races they cannot vote in, and nothing would catch it.
+
+The geocoder response solves this: it omits the `Incorporated Places` layer
+for unincorporated territory. Location lookup can detect the case and say so.
+**The city dropdown alone cannot** — this is a real correctness gap in the
+current design, not just a convenience issue.
+
+### Build order when this is picked up
+
+1. **Location button** — browser geolocation → `geographies/coordinates`.
+   Smallest change, no address handling at all, works with what's verified.
+2. **House number + street picker** — street list built from TIGER/Line road
+   files for St. Louis County, filtered to covered cities, stored in Supabase.
+   Scoping autocomplete to covered streets means the visitor never types the
+   fragile part, which removes most of caveat 3. Selecting a street also
+   resolves the city, so no city dropdown is needed.
+3. **Out-of-coverage ladder** — an address outside the five cities still gets
+   statewide contests (they attach to every Missouri address), plus any
+   state/federal district we happen to hold. Degrade to "we don't cover your
+   city yet" with a link to the county Board of Elections, never a dead end.
+
+Fallback whenever a lookup fails is the current city-level view, so this is an
+enhancement on a working baseline rather than a new point of failure.
+
+### Rejected alternatives
+
+- **Nominatim** as primary — works, but its usage policy forbids per-keystroke
+  autocomplete and requires attribution and rate limiting. Fine as a fallback
+  for a failed Census match; not a foundation.
+- **Commercial geocoders** (Google, Mapbox, Smarty) — reliable, but the key
+  must be held server-side, which means visitor addresses would pass through
+  infrastructure we operate. That forfeits "your address never leaves your
+  browser", which is worth more to this project than the match rate.
+- **County GIS address points + PostGIS** — the most accurate option, and the
+  only one that yields wards and precincts. Deferred, not rejected: real
+  ongoing maintenance, and Census is good enough for legislative districts.
+
+### Privacy requirement
+
+Lookups run from the browser, so the address never reaches our server or
+Supabase. **Keep it out of the URL too** — resolve the address, then route to
+the existing `#/city/<slug>`, holding resolved districts in memory. An address
+in the hash would end up in browser history, shared links, and referrer
+headers.
+
+## 7. November 2026 — what still has to be pulled from official sources
+
+The build environment cannot reach `sos.mo.gov`, `stlouiscountymo.gov`,
+`house.mo.gov` or `senate.mo.gov`, so everything below has to come from a
+person with a browser. Web search reaches secondary coverage, which is not an
+acceptable source for a certified candidate list on a nonpartisan site.
+
+### Where the official sources live
+
+| What | Where |
+|---|---|
+| **Certified candidate list, Nov 3 2026** | [2026GeneralElectionCertifiedCandidates.pdf](https://www.sos.mo.gov/CMSImages/ElectionCandidates/2026GeneralElectionCertifiedCandidates.pdf) — one PDF, every state and federal contest |
+| Same list, browsable | [Candidates on the Web](https://s1.sos.mo.gov/candidatesonweb/) |
+| County offices, judicial retentions, local measures | [St. Louis County Board of Elections](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/) — the sample ballot lookup is the authority for what actually prints on a ballot |
+| Dates and deadlines | [BOE election calendar](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/resources-and-information/election-calendar/) and [state election calendar](https://www.sos.mo.gov/elections/calendar) |
+| Absentee rules | [BOE absentee voting](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/absentee-voting/) |
+| Polling places | [BOE polling places](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/polling-places/) |
+
+The SoS PDF covers statewide, congressional, and legislative contests. It does
+**not** cover county offices, judicial retention questions, or local measures —
+those only appear on the county's sample ballot. Both sources are needed.
+
+### 7a. Voting dates — VERIFIED 13 September 2026 ✓
+
+`VOTING_GUIDE` in `assets/app.js` now matches the county's published
+2026/2027 Election Calendar and the Secretary of State's Notice of Election:
+
+| Date | Event | Source |
+|---|---|---|
+| Sept 22, 8 a.m. | Absentee voting with an excuse opens | RSMo 115.279(3) |
+| **Oct 7, 5 p.m.** | **Last day to register** | RSMo 115.135(1) |
+| Oct 20, 8 a.m. | No-excuse in-person absentee opens | RSMo 115.277 |
+| Oct 21, 5 p.m. | Last day to request a mailed ballot | RSMo 115.279(3) |
+| Nov 2, 5 p.m. | Last day to vote absentee in person at the BOE | county calendar |
+| Nov 3, 6 a.m.–7 p.m. | Election Day, polls open | SoS Notice of Election |
+
+Two dates the aggregators had missed entirely — Sept 22 and Nov 2 — are now
+included. Re-verify against the calendar whenever a new election is added.
+
+### 7b. Contests — state and federal DONE, county outstanding
+
+Entered in `migrations/007-certified-november-contests.sql` from the certified
+booklet:
+
+| Contest | Certified candidates |
+|---|---|
+| Senate 24 | LaVanna Wrobley (R) · Tracy McCreery (D, incumbent) |
+| Senate 14 | Vernon Norman (R) · Raychel Proudie (D) — open seat |
+| House 87 | Dan Hyatt (R) · Connie Steinmetz (D, incumbent) |
+| House 89 | George Hruza (R, incumbent) · Bryan Troop (D) |
+| Judicial retention | 19 questions — 1 Supreme Court, 3 Court of Appeals Eastern, 15 in the 21st Circuit |
+
+Candidate order follows the certified booklet's party order (Republican,
+Democratic, Libertarian, Independent) throughout, including a correction to
+migration 005, which had ordered MO-1 and MO-2 inconsistently.
+
+**Still outstanding — only on the county sample ballot:**
+
+- **St. Louis County offices.** County Executive is confirmed on the ballot.
+  A `county` scope now exists with a November election and no races, so the
+  site tells visitors the county contests are not listed yet rather than
+  presenting an incomplete ballot as complete. Adding races to that election
+  clears the notice automatically.
+- **Any county or municipal measures**, and any constitutional amendment
+  referred to November.
+
+For each, capture the office title exactly as printed, every candidate with
+certified party, incumbency, and `vote_for` where it is more than one.
+
+### 7c. Identity questions — both resolved 19 September 2026 ✓
+
+- **Nicole Greer** — the House 71 candidate and the Creve Coeur Ward 2 council
+  member are the **same person**. Her campaign site (votegreer.com) carries
+  both "Nicole Greer for Missouri House District 71" and "Nicole Greer for
+  Creve Coeur City Council"; the city's own Ward 2 page matches. The merge
+  `indexPeople()` performs is therefore correct, and her page should show both
+  roles. No data change needed.
+
+- **Senate 14's open seat** — Brian Williams, the sitting senator, ran for
+  St. Louis County Executive rather than re-election and lost the August
+  Democratic primary. He is not on the November ballot. Recorded as a comment
+  in migration 007, not as site copy, since it comes from news reporting.
+
+### 7d. Still open
+
+- **Town and Country's state senate district.** Search could not settle it and
+  the city currently shows **no state senate contest at all**, which is almost
+  certainly wrong. Fastest resolution is the Census geocoder, which returns
+  the state senate district for any point — see §6. Check two or three points
+  across the city, since it may span districts:
+
+  ```
+  https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=<lon>&y=<lat>&benchmark=Public_AR_Current&vintage=Current_Current&layers=all&format=json
+  ```
+
+  Read `2024 State Legislative Districts - Upper` from the response. Note that
+  layer is current; the congressional layer is not (§6, caveat 1).
+
+- **County offices, measures, and judicial wording** — still need a sample
+  ballot. The county's own lookup requires a voter-record login; open
+  alternatives are Vote411 (League of Women Voters), Ballotpedia and
+  BallotReady. None of them, nor the county site, is reachable from the build
+  environment — WebSearch is the only external access available here, and
+  search snippets are not an acceptable source for candidate names.
+
+  **County Executive specifically:** news reporting consistently gives Jake
+  Zimmerman (D) against Dennis Hancock (R), with at least one mention of a
+  Green Party candidate. That last part is exactly why it is not entered — a
+  nonpartisan site that omits a minor-party candidate from a race has failed
+  at the one thing it promises. Enter the full field from an official source
+  or leave the pending notice up.

@@ -60,6 +60,75 @@ const LEVEL_LABELS = {
 
 const LOOKUP_LINKS = `<a href="https://house.mo.gov/legislatorlookup.aspx" target="_blank" rel="noopener">Look up your Missouri legislators</a> · <a href="https://ziplook.house.gov/htbin/findrep_house" target="_blank" rel="noopener">Find your U.S. representative</a>`;
 
+// Shown in the masthead dateline and the footer. One constant so the two can
+// never drift apart — they did, and sat three weeks stale.
+const DATA_REVIEWED = "September 2026";
+
+/* ---------- Voting logistics ----------
+   Knowing what is on the ballot is only half of it; the other half is knowing
+   how and by when to vote. Keyed by state, then by election date, so November
+   deadlines cannot leak onto an April municipal ballot.
+
+   This lives in code rather than the database because these are state-level
+   statutory dates, not per-jurisdiction data. If a second state is ever added
+   it moves to a table; the shape here is already the shape of that table.
+
+   VERIFIED 13 Sept 2026 against the St. Louis County Board of Elections
+   2026/2027 Election Calendar and the Secretary of State's Notice of Election
+   in the certified-candidate booklet. Statute citations are the county's own.
+   Re-verify against the calendar before any future election is added — these
+   are the one part of the site where being approximately right is not good
+   enough, because a wrong deadline costs somebody their vote.               */
+const VOTING_GUIDE = {
+  MO: {
+    authority: "St. Louis County Board of Elections",
+    authorityUrl: "https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/",
+    calendarUrl: "https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/resources-and-information/election-calendar/",
+    stateUrl: "https://www.sos.mo.gov/elections/goVoteMissouri/",
+    idNote:
+      "Missouri asks for a government-issued photo ID at the polls. If you do " +
+      "not have one, you can still cast a provisional ballot, and the state " +
+      "offers a free ID for voting.",
+    elections: {
+      "2026-11-03": {
+        pollHours: "6:00 a.m. to 7:00 p.m.",
+        dates: [
+          {
+            on: "2026-09-22",
+            label: "Absentee voting opens, with an excuse",
+            detail: "By mail or in person, if one of the state's ten reasons applies to you — being away on Election Day, illness, military service and others. Opens 8:00 a.m. (RSMo 115.279).",
+          },
+          {
+            on: "2026-10-07",
+            label: "Last day to register to vote",
+            detail: "By 5:00 p.m. Registering after this means voting in the next election, not this one (RSMo 115.135).",
+          },
+          {
+            on: "2026-10-20",
+            label: "No-excuse in-person absentee voting opens",
+            detail: "Vote early in person with no reason needed, from 8:00 a.m. (RSMo 115.277).",
+          },
+          {
+            on: "2026-10-21",
+            label: "Last day to request a mailed ballot",
+            detail: "Applications must reach the Board of Elections by 5:00 p.m. (RSMo 115.279).",
+          },
+          {
+            on: "2026-11-02",
+            label: "Last day to vote absentee in person",
+            detail: "At the Board of Elections until 5:00 p.m., the day before the election.",
+          },
+          {
+            on: "2026-11-03",
+            label: "Election Day",
+            detail: "Polls are open 6:00 a.m. to 7:00 p.m. Bring photo ID.",
+          },
+        ],
+      },
+    },
+  },
+};
+
 let PLACES = {};      // "maryland-heights-mo" -> place view-model
 let STATEWIDE = {};   // "MO" -> [district, …] applying to every city in that state
 
@@ -106,7 +175,29 @@ function formatShortDate(iso) {
   } catch { return iso; }
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
+// Local date, not UTC. toISOString() rolls over to tomorrow at 7 p.m. Central,
+// which would have dropped election-day contests off the page at the exact
+// moment the last voters are still in line.
+function today() {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// Whole days from today to an ISO date: negative once it has passed, 0 today.
+// Built from calendar parts so daylight-saving shifts can't round it off by one.
+function daysUntil(iso) {
+  const [y, m, d] = String(iso).split("-").map(Number);
+  const [ty, tm, td] = today().split("-").map(Number);
+  if (!y || !ty) return null;
+  return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(ty, tm - 1, td)) / 86400000);
+}
+
+function countdown(days) {
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  return `${days} days away`;
+}
 
 /* ---------- Data loading ---------- */
 
@@ -355,13 +446,18 @@ function buildBallot(place) {
     }
   }
 
-  // Measures always close the ballot; offices group into ballot sections.
-  const measures = contests.filter((c) => c.kind === "measure");
-  const offices = contests.filter((c) => c.kind !== "measure");
+  // Propositions and amendments close the ballot, the way they print. Judicial
+  // retention questions are the exception: they are measures mechanically —
+  // a yes/no on a named judge — but a real ballot prints them as their own
+  // block, not among the amendments. Keeping them in the Judicial section also
+  // stops fifteen retention questions from burying a constitutional amendment.
+  const isClosing = (c) => c.kind === "measure" && c.scopeLevel !== "judicial";
+  const measures = contests.filter(isClosing);
+  const sectioned = contests.filter((c) => !isClosing(c));
 
   const sections = [];
   for (const def of BALLOT_SECTIONS) {
-    const inSection = offices.filter((c) => def.levels.includes(c.scopeLevel));
+    const inSection = sectioned.filter((c) => def.levels.includes(c.scopeLevel));
     if (!inSection.length) continue;
     inSection.sort((a, b) =>
       def.levels.indexOf(a.scopeLevel) - def.levels.indexOf(b.scopeLevel));
@@ -389,7 +485,14 @@ function groupByOffice(contests) {
   // level in different districts — the voter gets exactly one of them.
   const byOffice = new Map();
   for (const c of contests) {
-    const officeKey = `${c.scopeLevel}::${baseOfficeName(c.title)}`;
+    // Measures never group. Grouping means "you get exactly one of these",
+    // which is true of one office across sibling districts and false of
+    // measures — a voter answers every measure on their ballot. Without this,
+    // baseOfficeName() reduces every "Retention — <judge>" to "Retention" and
+    // folds fifteen separate questions into a single address-varies card.
+    const officeKey = c.kind === "measure"
+      ? `measure::${c.id}`
+      : `${c.scopeLevel}::${baseOfficeName(c.title)}`;
     if (!byOffice.has(officeKey)) byOffice.set(officeKey, []);
     byOffice.get(officeKey).push(c);
   }
@@ -622,9 +725,11 @@ function renderCity(place) {
       <h2>${esc(place.name)}, ${esc(STATE_NAMES[place.state] || place.state)}</h2>
       ${place.county ? `<span class="county">${esc(place.county)}</span>` : ""}
     </div>
-    ${cityLinksRow(place)}`;
+    ${cityLinksRow(place)}
+    ${deadlineBanner(place)}`;
 
   html += renderBallot(place);
+  html += renderVotingInfo(place);
   html += renderWhoRepresentsYou(place);
 
   paint(html);
@@ -673,6 +778,18 @@ function renderBallot(place) {
   let itemNo = 0;
   for (const section of b.sections) {
     html += `<div class="ballot-section" id="sec-${esc(slugify(section.label))}"><span class="ballot-section-label">${esc(section.label)}</span></div>`;
+
+    // A section made entirely of retention questions gets the list treatment.
+    const retentions = section.groups
+      .map((g) => g.single)
+      .filter((c) => c && c.kind === "measure" && c.scopeLevel === "judicial");
+    if (retentions.length === section.groups.length && retentions.length) {
+      const block = renderRetentionBlock(place, retentions, itemNo);
+      html += block.html;
+      itemNo = block.nextNo;
+      continue;
+    }
+
     html += `<div class="contest-grid">`;
     for (const group of section.groups) {
       itemNo += 1;
@@ -698,16 +815,24 @@ function renderBallot(place) {
 function ballotSummary(b) {
   let offices = 0;
   let measures = 0;
+  let retentions = 0;
   for (const section of b.sections) {
     for (const g of section.groups) {
       const list = g.single ? [g.single] : g.variants;
-      if (list[0] && list[0].kind === "measure") measures += 1;
-      else offices += 1;
+      const first = list[0];
+      if (!first) continue;
+      if (first.kind !== "measure") offices += 1;
+      // Counting judge retentions as "ballot measures" undersells how much of
+      // the ballot they are and misnames them — people expect "measures" to
+      // mean propositions and amendments.
+      else if (first.scopeLevel === "judicial") retentions += 1;
+      else measures += 1;
     }
   }
-  if (!offices && !measures) return "";
+  if (!offices && !measures && !retentions) return "";
   const bits = [];
   if (offices) bits.push(`${offices} contest${offices === 1 ? "" : "s"}`);
+  if (retentions) bits.push(`${retentions} judge retention question${retentions === 1 ? "" : "s"}`);
   if (measures) bits.push(`${measures} ballot measure${measures === 1 ? "" : "s"}`);
   const jumps = b.sections
     .map((s) => `<a href="#sec-${esc(slugify(s.label))}">${esc(s.label)}</a>`)
@@ -772,6 +897,42 @@ function renderVariantGroup(place, group, num) {
   return html + `</div>`;
 }
 
+// Judicial retention is a run of near-identical questions — nineteen of
+// "Shall Judge <name> of <court> be retained in office?" — where the only
+// thing that changes is the name. Nineteen full contest cards is eight
+// thousand pixels of ballot that looks far more daunting than the decision
+// actually is. Set them as a list under each court instead, explain the
+// mechanic once, and keep the full official text on each question's own page.
+function renderRetentionBlock(place, contests, startNo) {
+  const byCourt = new Map();
+  for (const c of contests) {
+    const court = c.scopeLabel || "Judicial";
+    if (!byCourt.has(court)) byCourt.set(court, []);
+    byCourt.get(court).push(c);
+  }
+
+  let n = startNo;
+  let html = `<div class="retention">
+    <p class="retention-lead">These judges are not running against anyone. For
+    each one you vote <strong>yes</strong> to keep them on the bench or
+    <strong>no</strong> to remove them. Leaving one blank is also allowed.</p>`;
+
+  for (const [court, list] of byCourt) {
+    html += `<div class="retention-court">${esc(court)}</div><ul class="retention-list">`;
+    for (const c of list) {
+      n += 1;
+      const name = String(c.title).replace(/^Retention\s+[—–-]\s+/, "");
+      html += `<li class="retention-item">
+          ${itemNumber(n)}
+          <a class="retention-name" href="#/city/${esc(place.key)}/measure/${esc(c.id)}">${esc(name)}</a>
+          <span class="retention-yn">Yes / No</span>
+        </li>`;
+    }
+    html += `</ul>`;
+  }
+  return { html: html + `</div>`, nextNo: n };
+}
+
 function renderMeasureCard(place, m, num) {
   return `
     <div class="measure">
@@ -785,6 +946,85 @@ function renderMeasureCard(place, m, num) {
 
 function personHref(place, person) {
   return `#/city/${place.key}/person/${person.slug || slugify(person.name)}`;
+}
+
+/* ---------- Voting logistics ---------- */
+
+// The guide for the election actually being shown, or null. Never falls back
+// to "some other election's dates" — wrong dates are worse than no dates.
+function votingGuide(place) {
+  if (!place.ballot) return null;
+  const state = VOTING_GUIDE[place.state];
+  const election = state && state.elections[place.ballot.date];
+  return election ? { ...state, ...election } : null;
+}
+
+// The next deadline that hasn't passed, with how far off it is.
+function nextDeadline(guide) {
+  for (const d of guide.dates) {
+    const days = daysUntil(d.on);
+    if (days !== null && days >= 0) return { ...d, days };
+  }
+  return null;
+}
+
+// A deadline close enough to act on gets said once, loudly, above the ballot.
+// Below three weeks out, "register by October 7" stops being trivia.
+function deadlineBanner(place) {
+  const guide = votingGuide(place);
+  if (!guide) return "";
+  const next = nextDeadline(guide);
+  if (!next || next.days > 21) return "";
+  return `<div class="deadline-banner">
+      <span class="deadline-when">${esc(countdown(next.days))}</span>
+      <span class="deadline-what"><strong>${esc(next.label)}</strong> — ${esc(formatShortDate(next.on))}</span>
+      <a class="deadline-link" href="#how-to-vote">All key dates</a>
+    </div>`;
+}
+
+// Passed deadlines stay on the page, marked as passed. Hiding them would let
+// somebody assume they still have time.
+function renderVotingInfo(place) {
+  const guide = votingGuide(place);
+  if (!guide) return "";
+  const next = nextDeadline(guide);
+
+  const rows = guide.dates.map((d) => {
+    const days = daysUntil(d.on);
+    const passed = days !== null && days < 0;
+    const isNext = next && next.on === d.on;
+    const status = passed ? "Passed" : days === null ? "" : countdown(days);
+    return `<li class="vote-date${passed ? " passed" : ""}${isNext ? " next" : ""}">
+        <span class="vote-date-day">${esc(formatShortDate(d.on))}</span>
+        <span class="vote-date-body">
+          <strong>${esc(d.label)}</strong>
+          <span class="vote-date-detail">${esc(d.detail)}</span>
+        </span>
+        ${status ? `<span class="vote-date-status">${esc(status)}</span>` : ""}
+      </li>`;
+  }).join("");
+
+  const authority = safeUrl(guide.authorityUrl);
+  const calendar = safeUrl(guide.calendarUrl);
+  const state = safeUrl(guide.stateUrl);
+
+  return `
+    <section class="vote-panel" id="how-to-vote" aria-label="How to vote">
+      <div class="part-break">
+        <span class="part-eyebrow">Voter information</span>
+        <h3>How and when to vote</h3>
+        <p>Dates set by Missouri law for the ${esc(formatShortDate(place.ballot.date))}
+           election. Confirm anything time-sensitive with your election authority —
+           we are a volunteer project, not an election office.</p>
+      </div>
+      <ol class="vote-dates">${rows}</ol>
+      <p class="vote-id">${esc(guide.idNote)}</p>
+      <div class="vote-links">
+        ${authority ? `<a href="${esc(authority)}" target="_blank" rel="noopener">${esc(guide.authority)}</a>` : ""}
+        ${state ? `<a href="${esc(state)}" target="_blank" rel="noopener">Register &amp; check your registration</a>` : ""}
+        ${calendar ? `<a href="${esc(calendar)}" target="_blank" rel="noopener">Official election calendar</a>` : ""}
+      </div>
+    </section>`;
 }
 
 function renderWhoRepresentsYou(place) {
@@ -1082,6 +1322,12 @@ function route() {
 }
 
 /* ---------- Boot ---------- */
+
+// Both review stamps come from one constant; the markup carries no date of
+// its own, so a stale one can't survive in the HTML.
+for (const id of ["reviewedTop", "reviewedFoot"]) {
+  if ($(id)) $(id).textContent = DATA_REVIEWED;
+}
 
 const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
 on("state", "change", onStateChange);

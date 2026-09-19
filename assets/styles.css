@@ -464,6 +464,120 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 
 /* ---------- Everything that is not the ballot ---------- */
 
+/* ---------- Judicial retention ----------
+   Set as a list, not as cards: the questions are identical except for the
+   name, so the repetition is the content. Cards would triple the height of
+   the ballot to say the same thing nineteen times. */
+
+.retention {
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  padding: var(--s4) var(--s5) var(--s5);
+}
+.retention-lead {
+  color: var(--ink-2); font-size: .94rem; max-width: var(--measure);
+  padding-bottom: var(--s3); border-bottom: 1px solid var(--rule);
+}
+.retention-lead strong { color: var(--ink); font-weight: 600; }
+.retention-court {
+  font-family: var(--font-ui);
+  font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink-3);
+  margin: var(--s5) 0 var(--s2);
+}
+.retention-list { list-style: none; }
+.retention-item {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--rule);
+  min-height: 44px;
+}
+.retention-name {
+  font-family: var(--font-display);
+  font-size: 1.04rem; color: var(--ink); text-decoration: none;
+  border-bottom: 1px solid var(--rule-strong);
+}
+.retention-name:hover { color: var(--link); border-bottom-color: var(--link); }
+.retention-yn {
+  margin-left: auto;
+  font-family: var(--font-ui);
+  font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-4); white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .retention { padding: var(--s4); }
+}
+
+/* ---------- Voting deadlines ----------
+   The banner is the one place on the page allowed to be loud. It appears only
+   inside three weeks of a deadline, so it stays rare enough to mean something. */
+
+.deadline-banner {
+  display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap;
+  margin: var(--s5) 0 0;
+  padding: var(--s3) var(--s4);
+  background: var(--accent-soft);
+  border: 1px solid var(--rule-strong);
+  border-left: 3px solid var(--accent);
+}
+.deadline-when {
+  font-family: var(--font-ui);
+  font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--accent); white-space: nowrap;
+}
+.deadline-what { color: var(--ink-2); font-size: .95rem; }
+.deadline-what strong { color: var(--ink); font-weight: 600; }
+.deadline-link { margin-left: auto; font-size: .9rem; white-space: nowrap; }
+
+.vote-panel { margin-top: var(--s6); }
+
+.vote-dates { list-style: none; border-top: 1px solid var(--rule); }
+.vote-date {
+  display: grid;
+  grid-template-columns: 8.5rem 1fr auto;
+  gap: var(--s3);
+  align-items: baseline;
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--rule);
+  min-height: 44px;
+}
+.vote-date-day {
+  font-family: var(--font-ui);
+  font-size: .82rem; font-weight: 600; letter-spacing: .02em;
+  color: var(--ink-3); white-space: nowrap;
+}
+.vote-date-body strong { display: block; color: var(--ink); font-weight: 600; font-size: .98rem; }
+.vote-date-detail { display: block; color: var(--ink-3); font-size: .88rem; }
+.vote-date-status {
+  font-family: var(--font-ui);
+  font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-4); white-space: nowrap;
+}
+/* The next deadline is the only one anyone can still act on. */
+.vote-date.next { background: var(--paper-2); }
+.vote-date.next .vote-date-status { color: var(--accent); }
+/* Passed dates stay visible but plainly spent — removing them would let
+   someone assume they still have time. */
+.vote-date.passed .vote-date-day,
+.vote-date.passed .vote-date-body strong { color: var(--ink-4); }
+.vote-date.passed .vote-date-detail { display: none; }
+
+.vote-id {
+  margin-top: var(--s4);
+  color: var(--ink-2); font-size: .92rem; max-width: var(--measure);
+}
+.vote-links {
+  display: flex; flex-wrap: wrap; gap: var(--s4);
+  margin-top: var(--s3); font-size: .92rem;
+}
+
+@media (max-width: 560px) {
+  .vote-date { grid-template-columns: 1fr auto; }
+  .vote-date-day { grid-column: 1 / -1; }
+  .deadline-link { margin-left: 0; }
+}
+
 .part-break { margin: var(--s8) 0 var(--s5); }
 .part-eyebrow {
   display: block;
