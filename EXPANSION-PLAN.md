@@ -316,11 +316,45 @@ migration 005, which had ordered MO-1 and MO-2 inconsistently.
 For each, capture the office title exactly as printed, every candidate with
 certified party, incumbency, and `vote_for` where it is more than one.
 
-### 7c. Two identity questions that produce wrong pages if ignored
+### 7c. Identity questions — both resolved 19 September 2026 ✓
 
 - **Nicole Greer** — the House 71 candidate and the Creve Coeur Ward 2 council
-  member. `indexPeople()` merges people by name within a place, so if these
-  are two people the site currently shows one merged page attributing both
-  roles to one person. If they are different, the data needs distinguishing.
-- **Town and Country's state senate district** — the city moved out of
-  District 24 in redistricting; confirm which district it is in now.
+  member are the **same person**. Her campaign site (votegreer.com) carries
+  both "Nicole Greer for Missouri House District 71" and "Nicole Greer for
+  Creve Coeur City Council"; the city's own Ward 2 page matches. The merge
+  `indexPeople()` performs is therefore correct, and her page should show both
+  roles. No data change needed.
+
+- **Senate 14's open seat** — Brian Williams, the sitting senator, ran for
+  St. Louis County Executive rather than re-election and lost the August
+  Democratic primary. He is not on the November ballot. Recorded as a comment
+  in migration 007, not as site copy, since it comes from news reporting.
+
+### 7d. Still open
+
+- **Town and Country's state senate district.** Search could not settle it and
+  the city currently shows **no state senate contest at all**, which is almost
+  certainly wrong. Fastest resolution is the Census geocoder, which returns
+  the state senate district for any point — see §6. Check two or three points
+  across the city, since it may span districts:
+
+  ```
+  https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=<lon>&y=<lat>&benchmark=Public_AR_Current&vintage=Current_Current&layers=all&format=json
+  ```
+
+  Read `2024 State Legislative Districts - Upper` from the response. Note that
+  layer is current; the congressional layer is not (§6, caveat 1).
+
+- **County offices, measures, and judicial wording** — still need a sample
+  ballot. The county's own lookup requires a voter-record login; open
+  alternatives are Vote411 (League of Women Voters), Ballotpedia and
+  BallotReady. None of them, nor the county site, is reachable from the build
+  environment — WebSearch is the only external access available here, and
+  search snippets are not an acceptable source for candidate names.
+
+  **County Executive specifically:** news reporting consistently gives Jake
+  Zimmerman (D) against Dennis Hancock (R), with at least one mention of a
+  Green Party candidate. That last part is exactly why it is not entered — a
+  nonpartisan site that omits a minor-party candidate from a race has failed
+  at the one thing it promises. Enter the full field from an official source
+  or leave the pending notice up.

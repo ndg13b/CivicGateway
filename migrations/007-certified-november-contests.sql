@@ -69,9 +69,12 @@ from r, (values
 -- Missouri Senate District 14 — Bridgeton, Overland, part of Maryland Heights
 -- R: Vernon Norman   D: Raychel Proudie
 --
--- OPEN SEAT: the sitting senator (Brian Williams) is not among the certified
--- nominees. ⚠ Confirm why — term limit or retirement — before describing the
--- seat as open on the site. Neither candidate is marked incumbent.
+-- OPEN SEAT: the sitting senator, Brian Williams, ran for St. Louis County
+-- Executive instead and lost the August Democratic primary to Jake Zimmerman,
+-- so he is not on the November ballot for anything. That is why neither
+-- nominee here is an incumbent. (Reported by KSDK, STLPR and the St. Louis
+-- American; not a certified-document fact, so it stays in a comment rather
+-- than being stated on the site.)
 --
 -- Migration 002 left Senate 14 without a November election row, because it was
 -- unclear whether the seat was on the 2026 cycle at all. The certified list
