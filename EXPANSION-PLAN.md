@@ -367,3 +367,64 @@ that, and it is the thing to check first.
 
 If Proposition A passes, the new boundaries apply from the 2028 cycle and the
 mapping needs revisiting then.
+
+## 9. Address narrowing (built September 2026)
+
+Supersedes the build order sketched in §6. The design changed once the extent
+of partial coverage became clear: with school district measures on the ballot,
+**every** city we serve splits across at least one scope, so the "if you live
+in…" note went from an edge case to the common case.
+
+### How it works
+
+1. The visitor types an address, or clicks "Use my location".
+2. An address goes to the Census **locations** endpoint, which returns
+   coordinates. Geolocation skips this step entirely.
+3. The point is tested against `assets/districts.geo.json`, which ships with
+   the site. Point-in-polygon runs in the browser.
+4. Scopes the address is not in are dropped from the ballot, and the page says
+   which ones it hid.
+
+### Why the boundaries ship with the site
+
+Asking Census for the districts at a point would have been less code. It would
+also have been wrong, silently.
+
+The geographies endpoint returns whichever congressional vintage Census
+currently publishes. Today that is the 119th, which is correct for this
+election — but only by accident, and it will roll to the 120th without notice.
+**The map in force for November 2026 is not the newest one**: HB1 is suspended
+pending the Proposition A referendum on this ballot. Migration 009 made
+precisely that mistake and had to be reverted in 010.
+
+`tools/build-district-geo.py` pins the layer in one constant, `CONGRESS_LAYER`,
+so the map can only change when someone changes it deliberately. Regenerate
+after the 2026 election, once Proposition A's outcome is known.
+
+The file is 63 KB raw, about 15 KB gzipped, and is fetched only when the tool
+is used — never on the critical path.
+
+### What it can and cannot resolve
+
+| Scope | Resolvable | Why |
+|---|---|---|
+| U.S. House | ✅ | Boundaries shipped |
+| School district | ✅ | Boundaries shipped |
+| State House / Senate | n/a | Every city is wholly inside one |
+| County Council | ❌ | No public boundary geometry found |
+
+Districts we carry no scope for — Pattonville, Ladue, Hazelwood and the rest —
+are in the file with a null slug. Their shapes are needed to rule a district
+**out**: someone in Pattonville must not be shown Parkway's measure.
+
+### Rules it follows
+
+- **The address never enters the URL.** Resolved districts live in memory and
+  `sessionStorage`; a shared link carries a city, never a home address.
+- **`sessionStorage`, not `localStorage`** — the narrowing dies with the tab,
+  so the next person using that browser does not inherit a stranger's address.
+- **Every failure leaves the full ballot on screen.** No match, geocoder down,
+  permission denied, boundaries unavailable: the page says what happened and
+  changes nothing. The tool narrows a correct page; it never gates one.
+- **Offered only where the city actually splits.** Where the picker already
+  gives a certain answer, asking for an address takes something for nothing.

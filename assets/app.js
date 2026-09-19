@@ -424,9 +424,24 @@ function buildBallot(place) {
     }
   }
 
+  // With an address resolved, drop the scopes this address is not in. Only
+  // levels we actually resolved are filtered — a scope we cannot pin down
+  // (County Council) still shows for everyone, which is the honest default.
+  const excluded = [];
+  const keepScope = (s) => {
+    if (!LOCATION) return true;
+    const resolved = LOCATION.districts[s.level];
+    if (resolved === undefined) return true;          // level not resolvable
+    if (!s.partial) return true;                      // covers the whole city
+    const mine = resolved && resolved.slug === s.shortName;
+    if (!mine) excluded.push(s.label);
+    return mine;
+  };
+
   const contests = [];
   const pending = [];
   for (const s of scopes) {
+    if (!keepScope(s)) continue;
     for (const e of (s.elections || [])) {
       if (e.election_date !== date) continue;
       if (!(e.races || []).length) pending.push(s.label);
@@ -477,6 +492,7 @@ function buildBallot(place) {
     name,
     note,
     pending: [...new Set(pending)],
+    excluded: [...new Set(excluded)],
     sections,
     hasContests: contests.length > 0,
     otherDates: [...new Set(dates)].filter((d) => d !== date).sort(),
@@ -738,6 +754,92 @@ function renderCity(place) {
   paint(html);
 }
 
+/* ---------- Address tool behaviour ---------- */
+
+function addrMsg(text, kind = "info") {
+  const el = $("addrMsg");
+  if (!el) return;
+  el.textContent = text;
+  el.className = `addr-msg ${kind}`;
+  el.hidden = !text;
+}
+
+// Anything that fails here leaves the full city ballot on screen. The tool is
+// a narrowing convenience on top of a correct page, never a gate in front of
+// one, so every failure path says what happened and changes nothing.
+async function resolvePoint(lon, lat, label) {
+  await loadGeo();
+  const districts = districtsAt(lon, lat);
+  const any = RESOLVABLE.some((l) => districts[l]);
+  if (!any) {
+    addrMsg("That address is outside the areas we have boundaries for. Showing the whole city.", "warn");
+    return;
+  }
+  LOCATION = { label, districts };
+  try {
+    sessionStorage.setItem("civic.location", JSON.stringify(LOCATION));
+  } catch { /* private browsing; the narrowing just won't outlive this page */ }
+  refreshBallots();
+  route();
+}
+
+async function onAddressCheck() {
+  const input = $("addrInput");
+  const value = (input && input.value || "").trim();
+  if (!value) { addrMsg("Enter a street address first.", "warn"); return; }
+  addrMsg("Looking up…");
+  try {
+    const { lon, lat, label } = await geocode(value);
+    await resolvePoint(lon, lat, label);
+  } catch (err) {
+    addrMsg(
+      String(err.message) === "no match"
+        ? "We couldn't find that address. Check the spelling, or use the whole-city ballot below."
+        : "The address lookup is unavailable right now. The whole-city ballot below is unaffected.",
+      "warn");
+  }
+}
+
+function onUseLocation() {
+  if (!navigator.geolocation) {
+    addrMsg("This browser can't share your location.", "warn");
+    return;
+  }
+  addrMsg("Asking your browser for your location…");
+  navigator.geolocation.getCurrentPosition(
+    (pos) => resolvePoint(pos.coords.longitude, pos.coords.latitude, "your location")
+      .catch(() => addrMsg("Couldn't load district boundaries.", "warn")),
+    () => addrMsg("Location permission was declined. You can type an address instead.", "warn"),
+    { timeout: 10000, maximumAge: 300000 });
+}
+
+function clearLocation() {
+  LOCATION = null;
+  try { sessionStorage.removeItem("civic.location"); } catch { /* nothing to clear */ }
+  refreshBallots();
+  route();
+}
+
+// A ballot is assembled once at load, so narrowing to an address has to
+// reassemble it. indexPeople() rebuilds its maps from scratch, so re-running
+// both is safe and keeps person and contest routes pointing at what is
+// actually on screen.
+function refreshBallots() {
+  for (const place of Object.values(PLACES)) {
+    place.ballot = buildBallot(place);
+    indexPeople(place);
+  }
+}
+
+// Rendering replaces the results element wholesale, so the controls are bound
+// after each paint rather than once at boot.
+function bindAddressTool() {
+  on("addrGo", "click", onAddressCheck);
+  on("addrGeo", "click", onUseLocation);
+  on("addrClear", "click", clearLocation);
+  on("addrInput", "keydown", (e) => { if (e.key === "Enter") onAddressCheck(); });
+}
+
 function cityLinksRow(p) {
   const parts = [];
   const site = safeUrl(p.website);
@@ -764,9 +866,13 @@ function renderBallot(place) {
       <div class="when">${esc(formatDate(b.date))}</div>
     </div>
     ${ballotSummary(b)}
+    ${addressTool(place, b)}
     <div class="accuracy-note">
-      <strong>This is what we expect on a ${esc(place.name)} ballot.</strong>
-      Some contests depend on your exact street address — ${LOOKUP_LINKS}.
+      ${LOCATION
+        ? `<strong>Narrowed to your address.</strong>
+           Contests for districts you are not in have been removed.`
+        : `<strong>This is what we expect on a ${esc(place.name)} ballot.</strong>
+           Some contests depend on your exact street address — ${LOOKUP_LINKS}.`}
       Always confirm with your local election authority before voting.
       ${b.note ? `<br><span class="note-status">${esc(b.note)}</span>` : ""}
     </div>`;
@@ -811,6 +917,50 @@ function renderBallot(place) {
   }
   html += `<div class="ballot-end">End of ballot</div></section>`;
   return html;
+}
+
+// Offered only when this city actually splits across a scope an address can
+// settle. Where the city picker already gives a certain answer, asking for an
+// address would be taking something for nothing.
+function citySplits(place) {
+  return place.districts.some(
+    (d) => d.partial && RESOLVABLE.includes(d.level));
+}
+
+function addressTool(place, b) {
+  if (!citySplits(place)) return "";
+
+  if (LOCATION) {
+    const bits = [];
+    for (const level of RESOLVABLE) {
+      const d = LOCATION.districts[level];
+      if (d && d.slug) bits.push(d.name);
+      else if (d) bits.push(`${d.name} (no contests here)`);
+    }
+    return `<div class="addr-tool resolved">
+        <div class="addr-resolved">
+          <strong>Showing the ballot for ${esc(LOCATION.label)}</strong>
+          ${bits.length ? `<span class="addr-districts">${esc(bits.join(" · "))}</span>` : ""}
+          ${b.excluded.length
+            ? `<span class="addr-districts">Hidden: ${esc(b.excluded.join(", "))}</span>` : ""}
+        </div>
+        <button type="button" class="addr-clear" id="addrClear">Show the whole city again</button>
+      </div>`;
+  }
+
+  return `<div class="addr-tool">
+      <label for="addrInput"><strong>Some contests below depend on your street address.</strong>
+        Enter it and we will show only the ones you vote on. It is sent to the
+        U.S. Census geocoder to find your districts, and is never stored or
+        put in the page address.</label>
+      <div class="addr-row">
+        <input type="text" id="addrInput" placeholder="123 Main St, ${esc(place.name)}, MO"
+               autocomplete="street-address" inputmode="text">
+        <button type="button" id="addrGo">Check</button>
+        <button type="button" id="addrGeo" class="secondary">Use my location</button>
+      </div>
+      <div class="addr-msg" id="addrMsg" hidden></div>
+    </div>`;
 }
 
 // Seeing the size of the ballot up front is less daunting than discovering it
@@ -949,6 +1099,94 @@ function renderMeasureCard(place, m, num) {
 
 function personHref(place, person) {
   return `#/city/${place.key}/person/${person.slug || slugify(person.name)}`;
+}
+
+/* ---------- Narrowing a ballot to one address ----------
+
+   Several scopes only cover part of a city — Maryland Heights and Creve Coeur
+   each straddle two congressional districts, and every city we serve straddles
+   two or more school districts. Without an address the ballot has to show both
+   sides behind an "if you live in…" note, which is honest but is work we are
+   pushing onto the reader.
+
+   Two deliberate choices:
+
+   1. THE BOUNDARIES ARE OURS, NOT AN API'S. assets/districts.geo.json ships
+      with the site and the point-in-polygon runs here. Asking Census for a
+      congressional district would return whichever vintage it currently
+      publishes, and the map in force for this election is NOT the newest one —
+      HB1 is suspended pending the Proposition A referendum. Migration 009 made
+      exactly that mistake. tools/build-district-geo.py pins the layer.
+
+   2. THE ADDRESS NEVER LEAVES THE BROWSER, except to the Census geocoder, and
+      never enters the URL. Resolved districts live in memory and sessionStorage
+      so a shared link carries a city, never a home address.                  */
+
+let LOCATION = null;   // { label, districts: {us_house: "MO-1", school: "…"|null} }
+let GEO = null;        // lazily fetched districts.geo.json
+
+const GEO_URL = "assets/districts.geo.json";
+const CENSUS_LOCATIONS =
+  "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress";
+
+// Which scope levels an address can settle. A level absent here is never
+// filtered, so a scope we cannot resolve (County Council) keeps showing.
+const RESOLVABLE = ["us_house", "school"];
+
+async function loadGeo() {
+  if (GEO) return GEO;
+  const res = await withTimeout(fetch(GEO_URL), FETCH_TIMEOUT_MS);
+  if (!res.ok) throw new Error(`boundaries unavailable (${res.status})`);
+  GEO = await res.json();
+  return GEO;
+}
+
+// Ray casting, counting crossings of every ring. An odd count is inside; holes
+// work automatically because crossing into a hole flips the count back out.
+function inRing(lon, lat, ring) {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [xi, yi] = ring[i], [xj, yj] = ring[j];
+    if ((yi > lat) !== (yj > lat) &&
+        lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) inside = !inside;
+  }
+  return inside;
+}
+
+function inGeometry(lon, lat, geom) {
+  const polys = geom.type === "MultiPolygon" ? geom.coordinates : [geom.coordinates];
+  for (const poly of polys) {
+    let hit = false;
+    for (const ring of poly) if (inRing(lon, lat, ring)) hit = !hit;
+    if (hit) return true;
+  }
+  return false;
+}
+
+// Resolve a point to one district per resolvable level. A level can legitimately
+// come back null — someone in Pattonville is in no school district we carry,
+// and must NOT be shown Parkway's measure.
+function districtsAt(lon, lat) {
+  const found = {};
+  for (const level of RESOLVABLE) found[level] = null;
+  for (const d of (GEO && GEO.districts) || []) {
+    if (!RESOLVABLE.includes(d.kind)) continue;
+    if (!inGeometry(lon, lat, d.geometry)) continue;
+    found[d.kind] = { slug: d.slug, name: d.name };
+  }
+  return found;
+}
+
+async function geocode(address) {
+  const url = `${CENSUS_LOCATIONS}?address=${encodeURIComponent(address)}` +
+              `&benchmark=Public_AR_Current&format=json`;
+  const res = await withTimeout(fetch(url), FETCH_TIMEOUT_MS);
+  if (!res.ok) throw new Error(`lookup failed (${res.status})`);
+  const json = await res.json();
+  const match = ((json.result || {}).addressMatches || [])[0];
+  if (!match) throw new Error("no match");
+  return { lon: match.coordinates.x, lat: match.coordinates.y,
+           label: match.matchedAddress };
 }
 
 /* ---------- Voting logistics ---------- */
@@ -1250,6 +1488,7 @@ function paint(html) {
   const r = $("results");
   r.innerHTML = html;
   r.classList.add("active");
+  bindAddressTool();
   window.scrollTo({ top: 0, behavior: "instant" });
 }
 
@@ -1325,6 +1564,14 @@ function route() {
 }
 
 /* ---------- Boot ---------- */
+
+// A narrowed ballot survives navigating between pages in this tab, and dies
+// with the tab. It is deliberately not localStorage: someone else using the
+// browser tomorrow should not inherit a stranger's address.
+try {
+  const saved = sessionStorage.getItem("civic.location");
+  if (saved) LOCATION = JSON.parse(saved);
+} catch { LOCATION = null; }
 
 // Both review stamps come from one constant; the markup carries no date of
 // its own, so a stale one can't survive in the HTML.

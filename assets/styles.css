@@ -464,6 +464,61 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 
 /* ---------- Everything that is not the ballot ---------- */
 
+/* ---------- Address narrowing ----------
+   Sits inside the ballot sheet, because narrowing the ballot is ballot
+   business. Quiet until used, then it states plainly what was hidden. */
+
+.addr-tool {
+  margin: var(--s4) 0 0;
+  padding: var(--s4);
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+}
+.addr-tool label {
+  display: block;
+  color: var(--ink-3); font-size: .88rem; line-height: 1.5;
+  max-width: var(--measure);
+}
+.addr-tool label strong { color: var(--ink); font-weight: 600; }
+.addr-row { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+.addr-row input {
+  flex: 1 1 18rem; min-width: 0; min-height: 44px;
+  padding: 0 var(--s3);
+  font: inherit; font-size: .95rem; color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+}
+.addr-row input:focus-visible { outline: 2px solid var(--link); outline-offset: -1px; }
+.addr-row button {
+  min-height: 44px; padding: 0 var(--s4);
+  font-family: var(--font-ui); font-size: .78rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--surface); background: var(--ink);
+  border: 1px solid var(--ink); cursor: pointer;
+}
+.addr-row button.secondary { color: var(--ink); background: var(--surface); border-color: var(--rule-strong); }
+.addr-row button:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+.addr-msg { margin-top: var(--s3); font-size: .9rem; color: var(--ink-3); }
+.addr-msg.warn { color: var(--accent); }
+
+.addr-tool.resolved {
+  display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap;
+  border-left: 3px solid var(--accent);
+}
+.addr-resolved { flex: 1 1 20rem; }
+.addr-resolved strong { display: block; color: var(--ink); font-weight: 600; font-size: .96rem; }
+.addr-districts {
+  display: block; margin-top: var(--s1);
+  color: var(--ink-3); font-size: .86rem;
+}
+.addr-clear {
+  min-height: 44px; padding: 0 var(--s3);
+  font-family: var(--font-ui); font-size: .78rem;
+  color: var(--link); background: none; border: none;
+  text-decoration: underline; cursor: pointer;
+}
+
 /* ---------- Judicial retention ----------
    Set as a list, not as cards: the questions are identical except for the
    name, so the repetition is the content. Cards would triple the height of
