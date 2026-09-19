@@ -358,3 +358,55 @@ certified party, incumbency, and `vote_for` where it is more than one.
   nonpartisan site that omits a minor-party candidate from a race has failed
   at the one thing it promises. Enter the full field from an official source
   or leave the pending notice up.
+
+## 8. District mappings checked against the geocoder (September 2026)
+
+With `geocoding.geo.census.gov` reachable, the §1 table — built in July from
+legislator bios and encyclopaedia prose — was checked against the Census 2024
+state legislative layer. Points were sampled across each city's bounding box
+and kept only where the API placed them inside that city.
+
+| City | Sample points | Senate | House | Our §1 table said |
+|---|---|---|---|---|
+| Town and Country | 15/15 | **15** | 89 | senate district unknown |
+| Maryland Heights | 105/105 | **24 only** | **87 only** | Senate 14 + 24; House 70 + 71 + 87 |
+| Creve Coeur | 21/21 | 24 | 71 | ✅ matches |
+| Bridgeton | 21/21 | 14 | 70 | ✅ matches |
+| Overland | 34/34 | 14 | **72** | House 71 |
+
+### What was acted on
+
+`migrations/008-district-mapping-corrections.sql` makes only **additive**
+changes, because sampling can prove a district is present in a city but never
+that one is absent — a sliver can fall between sample points.
+
+- **House 72 added, mapped to Overland**, with its certified contest
+  (Jeffrey Jacks R, Patrick James Wroblewski D). District 72 was missing from
+  our data entirely while Overland was shown District 71.
+- **Senate 15 added, mapped to Town and Country.** No election row: District
+  15 is odd-numbered and 2026 elects only even-numbered senate seats — every
+  senate district in the certified booklet is even. Town and Country correctly
+  has no state senate contest this cycle, and the seat will appear on its own
+  in 2028.
+
+### What was not
+
+Deleting mappings needs an official district map. If the sampling is right,
+**Maryland Heights is being shown three contests its residents cannot vote in**
+(Senate 14, House 70, House 71) and its "if you live in District 70/71/87"
+split is spurious; Overland's House 71 mapping is likewise wrong. The exact
+delete statement is written out at the foot of migration 008, to run once
+[house.mo.gov/districtmap.aspx](https://house.mo.gov/districtmap.aspx) or the
+county's precinct maps confirm it.
+
+Showing an extra contest is misleading; removing one wrongly would stop
+someone seeing a race they can vote in. The second is worse, so the extras
+stay until a map settles it.
+
+### Method note
+
+Sampling is a check, not a source. The authoritative answer is boundary
+geometry — TIGER shapefiles or the county's precinct maps. Only
+`geocoding.geo.census.gov` is allowlisted here; `tigerweb.geo.census.gov`,
+`www2.census.gov` and `api.census.gov` are not, so the geometry route is not
+available from this environment.
