@@ -21,62 +21,54 @@ people can confirm:
 - Missouri legislators by address: https://house.mo.gov/legislatorlookup.aspx
 - U.S. House by ZIP: https://ziplook.house.gov/htbin/findrep_house
 
-### District assignments — corrected September 2026 from boundary geometry
+### District assignments — verified September 2026
 
-The July table below it was wrong for three of five cities. These figures are
-polygon intersections: every Missouri district polygon from TIGERweb's
-Legislative service against each city's polygon from its Places service,
-computed with Shapely. Percentages are share of the city's area; anything
-under 0.1% is boundary-precision noise.
+Sources: TIGERweb boundary polygons intersected with each city's polygon
+(Shapely), **cross-checked against the St. Louis County Board of Elections
+ballot content report of 16 September 2026**, which is the authority on what
+actually prints.
 
-| City | U.S. House (120th — Nov 2026) | MO Senate | MO House |
+| City | U.S. House | MO Senate | MO House |
 |---|---|---|---|
-| Maryland Heights | **MO-2** 86.9% · **MO-3** 13.1% | **24** (100%) | **87** (100%) |
-| Creve Coeur | **MO-2** (100%) | **24** (100%) | **71** (100%) |
+| Maryland Heights | **MO-1** 32.7% · **MO-2** 67.3% | **24** (100%) | **87** (100%) |
+| Creve Coeur | **MO-1** 30.9% · **MO-2** 69.1% | **24** (100%) | **71** (100%) |
 | Bridgeton | **MO-1** (100%) | **14** (100%) | **70** (100%) |
 | Overland | **MO-1** (100%) | **14** (100%) | **72** (100%) |
 | Town and Country | **MO-2** (100%) | **15** (100%) | **89** (100%) |
 
-Only Maryland Heights genuinely spans two districts for any office, so it is
-the only city whose ballot carries an "if you live in…" note.
+Senate 15 is odd-numbered and 2026 elects only even-numbered senate seats, so
+Town and Country has no state senate contest this cycle — confirmed by the
+county report, which carries no District 15 contest.
 
-#### Two congressional maps, and which one applies
+#### Which congressional map applies, and why it is the older one
 
-TIGERweb carries both. **Layer 0, "120th Congressional Districts; January 1,
-2026 vintage", is the map being elected on November 3, 2026.** Layer 4, the
-119th, is what the sitting Congress was elected under in 2024 and does not
-apply to this ballot.
+TIGERweb carries two: layer 4 (119th) and layer 0 (120th, "January 1, 2026
+vintage"). The obvious reading — that the 120th applies because it is the
+Congress being elected — is **wrong**, and migration 009 acted on it before
+migration 010 reverted it.
 
-| City | 119th (sitting Congress) | 120th (Nov 2026 ballot) |
-|---|---|---|
-| Maryland Heights | CD 1 32.7% · CD 2 67.3% | CD 2 86.9% · CD 3 13.1% |
-| Creve Coeur | CD 1 30.9% · CD 2 69.1% | CD 2 100% |
-| Bridgeton, Overland | CD 1 100% | CD 1 100% |
-| Town and Country | CD 2 100% | CD 2 100% |
+The 120th boundaries come from House Bill 1 (2025 Second Extraordinary
+Session). That act is itself the subject of the referendum on this ballot as
+statewide **Proposition A**, and a referendum petition suspends the act until
+the vote. So November 2026 runs under the previous plan.
 
-State legislative districts are identical between the 2024 and 2026 layers for
-all five cities, so only the congressional lines moved.
+The county's ballot report is conclusive: the entire county has exactly two
+congressional contests, districts 1 and 2. Under the 120th map Maryland
+Heights would be 13% in district 3, and no district 3 contest exists anywhere
+in St. Louis County.
 
-#### ⚠️ The July redistricting note was wrong
+**Boundary geometry is authoritative about where lines are. It is not
+authoritative about which map is in force.** Only the election authority's own
+ballot answers that, and it is the first thing to check — not the last.
 
-It said the mid-decade redraw affected only districts 4, 5 and 6 around Kansas
-City, leaving MO-1 and MO-2 alone. The geometry says otherwise: the St. Louis
-lines moved substantially, and **Maryland Heights was showing the 1st District
-contest, which its residents cannot vote in under either map.**
+If Proposition A passes, the new boundaries apply from 2028.
 
-The lesson is not about redistricting. It is that the whole July table came
+#### On the July table below
+
+It was wrong for three of five cities, and the reason matters: it was built
 from prose — legislator bios saying a district "includes Maryland Heights
-(part)" — and prose cannot be checked. Geometry can. Anything that decides
-which contest a person is shown should come from boundary data.
-
-#### One known limitation
-
-`jurisdiction_districts` has no notion of time, so one mapping answers both
-"what is on your ballot" (120th map) and "who represents you now" (119th).
-They disagree for Maryland Heights and Creve Coeur, each roughly a third in
-the current 1st District. The ballot takes precedence, so those two cities no
-longer show Wesley Bell under "who represents you now". Fixing it properly
-means date-scoping the mapping table.
+(part)" — and prose cannot be checked. Anything deciding which contest a
+person is shown should come from boundary data, confirmed against a ballot.
 
 ### Superseded: the original July 2026 research
 
@@ -110,13 +102,11 @@ environment; check the official district maps at
   covers Des Peres/Town and Country/Chesterfield and matters when Town and
   Country is added)
 
-### ⚠️ Redistricting caveat
+### ⚠️ Redistricting caveat — SUPERSEDED, see §1 above
 
-Missouri redrew its **congressional** map mid-decade for 2026; reporting says
-the new lines affect districts 4, 5, and 6 (Kansas City area), leaving MO-1
-and MO-2 as described above — but **verify the St. Louis-area lines are
-unchanged** before the November election data goes in, in case of ongoing
-litigation.
+This said the redraw affected only districts 4, 5 and 6 around Kansas City.
+The redraw is real but is suspended pending the Proposition A referendum on
+this ballot, so it does not apply to the 2026 election at all.
 
 ## 2. The 2026 elections (relevant to our cities)
 
@@ -308,166 +298,72 @@ the existing `#/city/<slug>`, holding resolved districts in memory. An address
 in the hash would end up in browser history, shared links, and referrer
 headers.
 
-## 7. November 2026 — what still has to be pulled from official sources
+## 7. November 2026 — status
 
-The build environment cannot reach `sos.mo.gov`, `stlouiscountymo.gov`,
-`house.mo.gov` or `senate.mo.gov`, so everything below has to come from a
-person with a browser. Web search reaches secondary coverage, which is not an
-acceptable source for a certified candidate list on a nonpartisan site.
+**The ballot is now essentially complete.** Source for everything below: the
+St. Louis County Board of Elections "November 3, 2026 General Election —
+Unofficial Ballot Content Report", generated 16 September 2026, plus the
+Secretary of State's certified candidate booklet of 25 August 2026.
 
-### Where the official sources live
+Measure text was transcribed from the county report **by script**, not by
+hand — `official_text` is what a voter reads on the ballot, so paraphrase or
+typo would defeat its purpose.
 
-| What | Where |
+### What is on the site
+
+| Scope | Contests |
 |---|---|
-| **Certified candidate list, Nov 3 2026** | [2026GeneralElectionCertifiedCandidates.pdf](https://www.sos.mo.gov/CMSImages/ElectionCandidates/2026GeneralElectionCertifiedCandidates.pdf) — one PDF, every state and federal contest |
-| Same list, browsable | [Candidates on the Web](https://s1.sos.mo.gov/candidatesonweb/) |
-| County offices, judicial retentions, local measures | [St. Louis County Board of Elections](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/) — the sample ballot lookup is the authority for what actually prints on a ballot |
-| Dates and deadlines | [BOE election calendar](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/resources-and-information/election-calendar/) and [state election calendar](https://www.sos.mo.gov/elections/calendar) |
-| Absentee rules | [BOE absentee voting](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/absentee-voting/) |
-| Polling places | [BOE polling places](https://stlouiscountymo.gov/st-louis-county-government/board-of-elections/elections/polling-places/) |
+| Federal | U.S. Representative (districts 1 and 2) |
+| State | State Auditor; Senate 14 and 24; House 70, 71, 72, 87, 89 |
+| County | County Executive, Prosecuting Attorney, County Assessor |
+| Judicial | 19 retention questions, verbatim wording |
+| Statewide measures | Constitutional Amendments 3, 6, 7, 8; Proposition A |
+| County measures | Proposition A (County Auditor term), Proposition S (senior services levy) |
+| City measures | Creve Coeur Proposition G (Government Center bonds) |
+| School measures | Parkway Proposition P; Ritenour Propositions I and N |
 
-The SoS PDF covers statewide, congressional, and legislative contests. It does
-**not** cover county offices, judicial retention questions, or local measures —
-those only appear on the county's sample ballot. Both sources are needed.
+### School districts — a scope added in migration 011
 
-### 7a. Voting dates — VERIFIED 13 September 2026 ✓
+Coverage from TIGERweb school district polygons, percent of city area:
 
-`VOTING_GUIDE` in `assets/app.js` now matches the county's published
-2026/2027 Election Calendar and the Secretary of State's Notice of Election:
-
-| Date | Event | Source |
+| City | School districts | Measures that apply |
 |---|---|---|
-| Sept 22, 8 a.m. | Absentee voting with an excuse opens | RSMo 115.279(3) |
-| **Oct 7, 5 p.m.** | **Last day to register** | RSMo 115.135(1) |
-| Oct 20, 8 a.m. | No-excuse in-person absentee opens | RSMo 115.277 |
-| Oct 21, 5 p.m. | Last day to request a mailed ballot | RSMo 115.279(3) |
-| Nov 2, 5 p.m. | Last day to vote absentee in person at the BOE | county calendar |
-| Nov 3, 6 a.m.–7 p.m. | Election Day, polls open | SoS Notice of Election |
+| Maryland Heights | Parkway 52.8%, Pattonville 47.2% | Parkway P |
+| Creve Coeur | Parkway 66.7%, Ladue 30.7%, Pattonville 2.6% | Parkway P |
+| Town and Country | Parkway 97.9%, Kirkwood 1.6%, Ladue 0.5% | Parkway P |
+| Overland | Ritenour 96.7%, University City 3.3% | Ritenour I and N |
+| Bridgeton | Pattonville 50.7%, Hazelwood 47.5%, Ritenour 0.9% | Ritenour I and N |
 
-Two dates the aggregators had missed entirely — Sept 22 and Nov 2 — are now
-included. Re-verify against the calendar whenever a new election is added.
+Every one is marked partial — no city sits wholly inside one school district.
+Bridgeton's 0.9% Ritenour sliver is genuine and included: a handful of
+Bridgeton residents do vote on those measures, and omitting a real ballot item
+is worse than showing one behind an "if you live in…" note.
 
-### 7b. Contests — state and federal DONE, county outstanding
+### Still outstanding
 
-Entered in `migrations/007-certified-november-contests.sql` from the certified
-booklet:
+**County Council.** Districts 1, 3, 5 and 7 are on the ballot. Which council
+district each of our cities falls in is not in any dataset reachable from the
+build environment, and the council map is not published as queryable boundary
+geometry. A County Council scope exists with an election and no races, so the
+site says the contest is not listed rather than looking complete. To resolve
+it, a council district map or a sample ballot showing the council contest is
+needed.
 
-| Contest | Certified candidates |
-|---|---|
-| Senate 24 | LaVanna Wrobley (R) · Tracy McCreery (D, incumbent) |
-| Senate 14 | Vernon Norman (R) · Raychel Proudie (D) — open seat |
-| House 87 | Dan Hyatt (R) · Connie Steinmetz (D, incumbent) |
-| House 89 | George Hruza (R, incumbent) · Bryan Troop (D) |
-| Judicial retention | 19 questions — 1 Supreme Court, 3 Court of Appeals Eastern, 15 in the 21st Circuit |
+### The congressional map — a correction worth remembering
 
-Candidate order follows the certified booklet's party order (Republican,
-Democratic, Libertarian, Independent) throughout, including a correction to
-migration 005, which had ordered MO-1 and MO-2 inconsistently.
+Migration 009 remapped cities using TIGERweb's "120th Congressional Districts"
+layer, reasoning that the 120th Congress is elected in November 2026.
 
-**Still outstanding — only on the county sample ballot:**
+That was wrong, and migration 010 reverted it. Those boundaries come from
+House Bill 1 (2025 Second Extraordinary Session), which is itself the subject
+of the referendum on this ballot as statewide Proposition A. A referendum
+petition suspends the act, so **the 2026 election runs under the previous
+map.** The county's ballot report proves it: the entire county has exactly two
+congressional contests, districts 1 and 2, and none for district 3.
 
-- **St. Louis County offices.** County Executive is confirmed on the ballot.
-  A `county` scope now exists with a November election and no races, so the
-  site tells visitors the county contests are not listed yet rather than
-  presenting an incomplete ballot as complete. Adding races to that election
-  clears the notice automatically.
-- **Any county or municipal measures**, and any constitutional amendment
-  referred to November.
+The lesson: boundary geometry is authoritative about where lines are, not
+about which map is in force. Only the election authority's own ballot answers
+that, and it is the thing to check first.
 
-For each, capture the office title exactly as printed, every candidate with
-certified party, incumbency, and `vote_for` where it is more than one.
-
-### 7c. Identity questions — both resolved 19 September 2026 ✓
-
-- **Nicole Greer** — the House 71 candidate and the Creve Coeur Ward 2 council
-  member are the **same person**. Her campaign site (votegreer.com) carries
-  both "Nicole Greer for Missouri House District 71" and "Nicole Greer for
-  Creve Coeur City Council"; the city's own Ward 2 page matches. The merge
-  `indexPeople()` performs is therefore correct, and her page should show both
-  roles. No data change needed.
-
-- **Senate 14's open seat** — Brian Williams, the sitting senator, ran for
-  St. Louis County Executive rather than re-election and lost the August
-  Democratic primary. He is not on the November ballot. Recorded as a comment
-  in migration 007, not as site copy, since it comes from news reporting.
-
-### 7d. Still open
-
-- **Town and Country's state senate district.** Search could not settle it and
-  the city currently shows **no state senate contest at all**, which is almost
-  certainly wrong. Fastest resolution is the Census geocoder, which returns
-  the state senate district for any point — see §6. Check two or three points
-  across the city, since it may span districts:
-
-  ```
-  https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=<lon>&y=<lat>&benchmark=Public_AR_Current&vintage=Current_Current&layers=all&format=json
-  ```
-
-  Read `2024 State Legislative Districts - Upper` from the response. Note that
-  layer is current; the congressional layer is not (§6, caveat 1).
-
-- **County offices, measures, and judicial wording** — still need a sample
-  ballot. The county's own lookup requires a voter-record login; open
-  alternatives are Vote411 (League of Women Voters), Ballotpedia and
-  BallotReady. None of them, nor the county site, is reachable from the build
-  environment — WebSearch is the only external access available here, and
-  search snippets are not an acceptable source for candidate names.
-
-  **County Executive specifically:** news reporting consistently gives Jake
-  Zimmerman (D) against Dennis Hancock (R), with at least one mention of a
-  Green Party candidate. That last part is exactly why it is not entered — a
-  nonpartisan site that omits a minor-party candidate from a race has failed
-  at the one thing it promises. Enter the full field from an official source
-  or leave the pending notice up.
-
-## 8. District mappings checked against the geocoder (September 2026)
-
-With `geocoding.geo.census.gov` reachable, the §1 table — built in July from
-legislator bios and encyclopaedia prose — was checked against the Census 2024
-state legislative layer. Points were sampled across each city's bounding box
-and kept only where the API placed them inside that city.
-
-| City | Sample points | Senate | House | Our §1 table said |
-|---|---|---|---|---|
-| Town and Country | 15/15 | **15** | 89 | senate district unknown |
-| Maryland Heights | 105/105 | **24 only** | **87 only** | Senate 14 + 24; House 70 + 71 + 87 |
-| Creve Coeur | 21/21 | 24 | 71 | ✅ matches |
-| Bridgeton | 21/21 | 14 | 70 | ✅ matches |
-| Overland | 34/34 | 14 | **72** | House 71 |
-
-### What was acted on
-
-`migrations/008-district-mapping-corrections.sql` makes only **additive**
-changes, because sampling can prove a district is present in a city but never
-that one is absent — a sliver can fall between sample points.
-
-- **House 72 added, mapped to Overland**, with its certified contest
-  (Jeffrey Jacks R, Patrick James Wroblewski D). District 72 was missing from
-  our data entirely while Overland was shown District 71.
-- **Senate 15 added, mapped to Town and Country.** No election row: District
-  15 is odd-numbered and 2026 elects only even-numbered senate seats — every
-  senate district in the certified booklet is even. Town and Country correctly
-  has no state senate contest this cycle, and the seat will appear on its own
-  in 2028.
-
-### What was not
-
-Deleting mappings needs an official district map. If the sampling is right,
-**Maryland Heights is being shown three contests its residents cannot vote in**
-(Senate 14, House 70, House 71) and its "if you live in District 70/71/87"
-split is spurious; Overland's House 71 mapping is likewise wrong. The exact
-delete statement is written out at the foot of migration 008, to run once
-[house.mo.gov/districtmap.aspx](https://house.mo.gov/districtmap.aspx) or the
-county's precinct maps confirm it.
-
-Showing an extra contest is misleading; removing one wrongly would stop
-someone seeing a race they can vote in. The second is worse, so the extras
-stay until a map settles it.
-
-### Method note
-
-Sampling is a check, not a source. The authoritative answer is boundary
-geometry — TIGER shapefiles or the county's precinct maps. Only
-`geocoding.geo.census.gov` is allowlisted here; `tigerweb.geo.census.gov`,
-`www2.census.gov` and `api.census.gov` are not, so the geometry route is not
-available from this environment.
+If Proposition A passes, the new boundaries apply from the 2028 cycle and the
+mapping needs revisiting then.
