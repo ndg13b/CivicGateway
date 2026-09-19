@@ -21,62 +21,54 @@ people can confirm:
 - Missouri legislators by address: https://house.mo.gov/legislatorlookup.aspx
 - U.S. House by ZIP: https://ziplook.house.gov/htbin/findrep_house
 
-### District assignments — corrected September 2026 from boundary geometry
+### District assignments — verified September 2026
 
-The July table below it was wrong for three of five cities. These figures are
-polygon intersections: every Missouri district polygon from TIGERweb's
-Legislative service against each city's polygon from its Places service,
-computed with Shapely. Percentages are share of the city's area; anything
-under 0.1% is boundary-precision noise.
+Sources: TIGERweb boundary polygons intersected with each city's polygon
+(Shapely), **cross-checked against the St. Louis County Board of Elections
+ballot content report of 16 September 2026**, which is the authority on what
+actually prints.
 
-| City | U.S. House (120th — Nov 2026) | MO Senate | MO House |
+| City | U.S. House | MO Senate | MO House |
 |---|---|---|---|
-| Maryland Heights | **MO-2** 86.9% · **MO-3** 13.1% | **24** (100%) | **87** (100%) |
-| Creve Coeur | **MO-2** (100%) | **24** (100%) | **71** (100%) |
+| Maryland Heights | **MO-1** 32.7% · **MO-2** 67.3% | **24** (100%) | **87** (100%) |
+| Creve Coeur | **MO-1** 30.9% · **MO-2** 69.1% | **24** (100%) | **71** (100%) |
 | Bridgeton | **MO-1** (100%) | **14** (100%) | **70** (100%) |
 | Overland | **MO-1** (100%) | **14** (100%) | **72** (100%) |
 | Town and Country | **MO-2** (100%) | **15** (100%) | **89** (100%) |
 
-Only Maryland Heights genuinely spans two districts for any office, so it is
-the only city whose ballot carries an "if you live in…" note.
+Senate 15 is odd-numbered and 2026 elects only even-numbered senate seats, so
+Town and Country has no state senate contest this cycle — confirmed by the
+county report, which carries no District 15 contest.
 
-#### Two congressional maps, and which one applies
+#### Which congressional map applies, and why it is the older one
 
-TIGERweb carries both. **Layer 0, "120th Congressional Districts; January 1,
-2026 vintage", is the map being elected on November 3, 2026.** Layer 4, the
-119th, is what the sitting Congress was elected under in 2024 and does not
-apply to this ballot.
+TIGERweb carries two: layer 4 (119th) and layer 0 (120th, "January 1, 2026
+vintage"). The obvious reading — that the 120th applies because it is the
+Congress being elected — is **wrong**, and migration 009 acted on it before
+migration 010 reverted it.
 
-| City | 119th (sitting Congress) | 120th (Nov 2026 ballot) |
-|---|---|---|
-| Maryland Heights | CD 1 32.7% · CD 2 67.3% | CD 2 86.9% · CD 3 13.1% |
-| Creve Coeur | CD 1 30.9% · CD 2 69.1% | CD 2 100% |
-| Bridgeton, Overland | CD 1 100% | CD 1 100% |
-| Town and Country | CD 2 100% | CD 2 100% |
+The 120th boundaries come from House Bill 1 (2025 Second Extraordinary
+Session). That act is itself the subject of the referendum on this ballot as
+statewide **Proposition A**, and a referendum petition suspends the act until
+the vote. So November 2026 runs under the previous plan.
 
-State legislative districts are identical between the 2024 and 2026 layers for
-all five cities, so only the congressional lines moved.
+The county's ballot report is conclusive: the entire county has exactly two
+congressional contests, districts 1 and 2. Under the 120th map Maryland
+Heights would be 13% in district 3, and no district 3 contest exists anywhere
+in St. Louis County.
 
-#### ⚠️ The July redistricting note was wrong
+**Boundary geometry is authoritative about where lines are. It is not
+authoritative about which map is in force.** Only the election authority's own
+ballot answers that, and it is the first thing to check — not the last.
 
-It said the mid-decade redraw affected only districts 4, 5 and 6 around Kansas
-City, leaving MO-1 and MO-2 alone. The geometry says otherwise: the St. Louis
-lines moved substantially, and **Maryland Heights was showing the 1st District
-contest, which its residents cannot vote in under either map.**
+If Proposition A passes, the new boundaries apply from 2028.
 
-The lesson is not about redistricting. It is that the whole July table came
+#### On the July table below
+
+It was wrong for three of five cities, and the reason matters: it was built
 from prose — legislator bios saying a district "includes Maryland Heights
-(part)" — and prose cannot be checked. Geometry can. Anything that decides
-which contest a person is shown should come from boundary data.
-
-#### One known limitation
-
-`jurisdiction_districts` has no notion of time, so one mapping answers both
-"what is on your ballot" (120th map) and "who represents you now" (119th).
-They disagree for Maryland Heights and Creve Coeur, each roughly a third in
-the current 1st District. The ballot takes precedence, so those two cities no
-longer show Wesley Bell under "who represents you now". Fixing it properly
-means date-scoping the mapping table.
+(part)" — and prose cannot be checked. Anything deciding which contest a
+person is shown should come from boundary data, confirmed against a ballot.
 
 ### Superseded: the original July 2026 research
 
@@ -110,13 +102,11 @@ environment; check the official district maps at
   covers Des Peres/Town and Country/Chesterfield and matters when Town and
   Country is added)
 
-### ⚠️ Redistricting caveat
+### ⚠️ Redistricting caveat — SUPERSEDED, see §1 above
 
-Missouri redrew its **congressional** map mid-decade for 2026; reporting says
-the new lines affect districts 4, 5, and 6 (Kansas City area), leaving MO-1
-and MO-2 as described above — but **verify the St. Louis-area lines are
-unchanged** before the November election data goes in, in case of ongoing
-litigation.
+This said the redraw affected only districts 4, 5 and 6 around Kansas City.
+The redraw is real but is suspended pending the Proposition A referendum on
+this ballot, so it does not apply to the 2026 election at all.
 
 ## 2. The 2026 elections (relevant to our cities)
 
