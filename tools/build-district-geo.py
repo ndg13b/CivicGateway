@@ -37,6 +37,14 @@ UA = {"User-Agent": "CivicGateway-build/1.0 (https://civicgateway.org)"}
 CONGRESS_LAYER = "Legislative/MapServer/4"
 SCHOOL_LAYER = "School/MapServer/0"
 
+# County Council districts are not Census geography, so they come from the
+# county's own GIS. Districts 1, 3, 5 and 7 are on the 2026 ballot; 2, 4 and 6
+# are mid-term. We fetch all seven because being in a district that is NOT up
+# is the answer for most of our cities, and we would rather say that than
+# leave a contest looking unresolved.
+COUNCIL_SERVICE = ("https://services2.arcgis.com/w657bnjzrjguNyOy/arcgis/rest/"
+                   "services/Council_District_Plan_2022/FeatureServer/0/query")
+
 # TIGERweb name -> our districts.short_name, or None when we carry no scope
 # for it (we still need the shape, to rule that district IN and others OUT).
 SLUGS = {
@@ -44,6 +52,12 @@ SLUGS = {
     "Congressional District 2": "MO-2",
     "Parkway C-2 School District": "Parkway C-2",
     "Ritenour School District": "Ritenour",
+    # Only the council districts on the 2026 ballot carry a scope. The others
+    # are shipped with a null slug so the site can tell someone their council
+    # seat simply is not up this year, rather than saying nothing.
+    "District 1": "Council 1",
+    "District 3": "Council 3",
+    "District 7": "Council 7",
 }
 
 CITIES = ["Maryland Heights city", "Creve Coeur city", "Bridgeton city",
@@ -110,8 +124,23 @@ def main():
             "geometry": mapping(geom.simplify(0.00005, preserve_topology=True)),
         })
 
-    for kind, layer in (("us_house", CONGRESS_LAYER), ("school", SCHOOL_LAYER)):
-        for name, geom in fetch(layer).items():
+    def council():
+        r = post(COUNCIL_SERVICE, {
+            "where": "1=1", "outFields": "LONGNAME", "returnGeometry": "true",
+            "outSR": "4326", "f": "json"})
+        if "error" in r:
+            sys.exit(f"county council service error: {r['error']}")
+        return {f["attributes"]["LONGNAME"]: to_shape(f["geometry"])
+                for f in r["features"]}
+
+    sources = [("us_house", fetch(CONGRESS_LAYER)),
+               ("school", fetch(SCHOOL_LAYER)),
+               # kind must match districts.level in the database, so the address
+               # tool can line a resolved boundary up with the scope it filters.
+               ("county", council())]
+
+    for kind, layer in sources:
+        for name, geom in layer.items():
             if not geom.intersects(covered):
                 continue
             # Require a real overlap with a city, not a shared boundary line.
