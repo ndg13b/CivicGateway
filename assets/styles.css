@@ -740,6 +740,74 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   margin: 0 auto;
 }
 .detail-sheet > *:last-child { margin-bottom: 0; }
+
+/* ---------- Candidate page: body and sidebar ---------- */
+
+.detail-cols { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+@media (min-width: 880px) {
+  /* The sheet widens to carry a sidebar rather than squeezing the body. */
+  .detail-sheet { max-width: 1000px; }
+  .detail-cols { grid-template-columns: minmax(0, 1fr) 15rem; gap: var(--s7); }
+  .detail-aside { border-left: 1px solid var(--rule); padding-left: var(--s5); }
+}
+.detail-main > *:last-child { margin-bottom: 0; }
+
+.aside-sec { margin-bottom: var(--s6); }
+.aside-sec > h3 {
+  font-size: .66rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ink-3);
+  padding-bottom: var(--s2); margin-bottom: var(--s3);
+  border-bottom: 1px solid var(--rule);
+}
+
+.opp-list { display: flex; flex-direction: column; }
+.opp {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s3) 0; min-height: 44px;
+  border-bottom: 1px solid var(--rule);
+  text-decoration: none; color: inherit;
+}
+.opp:last-child { border-bottom: none; }
+.opp:hover .opp-name { color: var(--link); }
+.opp-av {
+  flex: none; width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--paper-2); border: 1px solid var(--rule);
+  font-family: var(--font-ui); font-size: .7rem; font-weight: 700; color: var(--ink-3);
+}
+.opp-name {
+  display: block; font-family: var(--font-display);
+  font-size: 1rem; color: var(--ink);
+}
+.opp-party { display: block; font-size: .8rem; color: var(--ink-3); }
+.opp-all { display: inline-block; margin-top: var(--s3); font-size: .86rem; }
+
+/* ---------- Information slots ---------- */
+
+.slots { margin-bottom: var(--s6); }
+.slot { padding: var(--s4) 0; border-bottom: 1px solid var(--rule); }
+.slot:first-child { padding-top: 0; }
+.slot-label {
+  font-family: var(--font-ui);
+  font-size: .66rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: var(--s2);
+}
+.slot-body { color: var(--ink-2); font-size: .96rem; }
+.slot-body p { margin-bottom: var(--s2); }
+/* An empty slot is stated, not hidden: a gap in our research reads very
+   differently from an absence of anything to say. */
+.slot-body.is-empty { color: var(--ink-4); font-style: italic; }
+.slot-body.is-empty a { font-style: normal; }
+.slot-src {
+  display: block; margin-top: var(--s1);
+  font-family: var(--font-ui); font-size: .72rem; color: var(--ink-4);
+}
+
+.coverage-note {
+  margin-top: var(--s5); padding: var(--s3) var(--s4);
+  background: var(--paper-2); border-left: 2px solid var(--rule-strong);
+  font-size: .86rem; color: var(--ink-3); max-width: var(--measure);
+}
 .detail-sheet .page-sec { max-width: none; }
 .detail-sheet .neutrality { max-width: none; }
 .measure-sheet .official-text {

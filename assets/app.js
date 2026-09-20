@@ -146,8 +146,14 @@ function esc(v) {
 }
 
 function safeUrl(u) {
+  // Guard the empties first. String(null) is "null", which resolves happily
+  // against the page URL — so a missing website produced a working-looking
+  // "Website" link pointing at /null on every candidate who had none.
+  if (u == null) return null;
+  const raw = String(u).trim();
+  if (!raw || raw === "null" || raw === "undefined") return null;
   try {
-    const parsed = new URL(String(u), window.location.href);
+    const parsed = new URL(raw, window.location.href);
     return ["http:", "https:"].includes(parsed.protocol) ? parsed.href : null;
   } catch { return null; }
 }
@@ -1622,6 +1628,93 @@ function renderDistrictOfficials(place) {
 
 /* ---------- View: person page ---------- */
 
+const SUGGEST_URL = "https://github.com/ndg13b/CivicGateway/issues";
+
+/* ---------- Candidate information: same slots for everyone ----------
+
+   Incumbents arrive with a biography and an official page because that is
+   what house.mo.gov and house.gov publish; challengers have no equivalent
+   source. Left as free-form prose, that reads as a difference between the
+   candidates rather than a difference in our research — in every contested
+   race the officeholder got a paragraph and the challenger got a party label.
+
+   So every candidate gets the same labelled slots and the empty ones are
+   shown, not hidden. Absence then reads as "we don't have this yet", which is
+   true, instead of "there is nothing to say about this person", which isn't.
+   The incumbent's advantage narrows to holding the office, which is a fact
+   worth stating rather than an edge we handed them.                        */
+function slot(label, filled, emptyText) {
+  return `<div class="slot">
+      <div class="slot-label">${esc(label)}</div>
+      <div class="slot-body${filled ? "" : " is-empty"}">${
+        filled || `${esc(emptyText)} <a href="${SUGGEST_URL}" target="_blank" rel="noopener">Suggest one</a>`
+      }</div>
+    </div>`;
+}
+
+function infoSlots(person, contest) {
+  const out = [];
+
+  // Sourced from an official office page, so say so. It explains why only
+  // people already in office have one.
+  if (person.bio) {
+    out.push(`<div class="slot">
+        <div class="slot-label">Currently holds this office</div>
+        <div class="slot-body"><p>${esc(person.bio)}</p>
+          <span class="slot-src">From their official office page</span></div>
+      </div>`);
+  }
+
+  const isCandidate = person.role === "candidate";
+  out.push(slot(
+    isCandidate ? "Campaign website & contact" : "Contact & official links",
+    contactLinks(person),
+    isCandidate
+      ? "We don't have a campaign site or contact for this candidate yet."
+      : "We don't have contact details for this office yet."));
+
+  if (isCandidate) {
+    out.push(slot("Voter guide response", null,
+                  "No voter guide questionnaire on file for this candidate."));
+  }
+  return `<div class="slots">${out.join("")}</div>`;
+}
+
+// The site is one volunteer's research, and what is missing is missing for
+// that reason rather than because it doesn't exist. Saying so plainly is more
+// honest than quietly levelling everyone down to the least-documented.
+function coverageNote() {
+  return `<p class="coverage-note">Some candidates have more material online than others,
+    and this page shows what the volunteer running Civic Gateway has found so far — not
+    everything that exists. A blank section is a gap in our research, not a judgement about
+    the candidate. <a href="${SUGGEST_URL}" target="_blank" rel="noopener">Suggest something
+    we've missed</a> and we'll add it.</p>`;
+}
+
+// Everyone else on the ballot for this seat. A voter comparing candidates
+// should not have to go back to the ballot and find the contest again.
+function opponentsPanel(place, person, contest) {
+  if (!contest || !contest.candidates) return "";
+  const others = contest.candidates.filter((c) => c.name !== person.name);
+  if (!others.length) {
+    return `<div class="aside-sec"><h3>Others in this race</h3>
+      <p class="nothing">No other candidate filed for this seat.</p></div>`;
+  }
+  return `<div class="aside-sec">
+      <h3>Others in this race</h3>
+      <div class="opp-list">${others.map((c) => `
+        <a class="opp" href="${esc(personHref(place, c))}">
+          <span class="opp-av" aria-hidden="true">${esc(initials(c.name))}</span>
+          <span class="opp-body">
+            <span class="opp-name">${esc(c.name)}${
+              c.incumbent ? '<span class="chip-inc">Incumbent</span>' : ""}</span>
+            ${c.party ? `<span class="opp-party">${esc(c.party)}</span>` : ""}
+          </span>
+        </a>`).join("")}</div>
+      <a class="opp-all" href="#/city/${esc(place.key)}/contest/${esc(contest.id)}">See the whole contest →</a>
+    </div>`;
+}
+
 function renderPerson(place, person) {
   setChrome({ picker: false, selected: place });
 
@@ -1660,22 +1753,24 @@ function renderPerson(place, person) {
       </div>
     </div>
 
-    ${person.bio ? `<div class="page-sec"><h3>About</h3><p>${esc(person.bio)}</p></div>` : ""}
-
-    <div class="page-sec"><h3>Contact &amp; official links</h3>
-      <div class="links">${contactLinks(person) || '<span class="nothing">No links available yet.</span>'}</div>
+    <div class="detail-cols">
+      <div class="detail-main">
+        ${infoSlots(person, contest)}
+        ${resourceSection("Debates & candidate forums", debates, { contest, excludeName: person.name })}
+        ${resourceSection("Interviews & coverage", interviews)}
+        ${resourceSection("More information", info, { contest, excludeName: person.name })}
+        ${coverageNote()}
+      </div>
+      <aside class="detail-aside" aria-label="More from this ballot">
+        ${opponentsPanel(place, person, contest)}
+        ${alsoOnBallot.length ? `<div class="aside-sec"><h3>Also on your ballot</h3>
+          <div class="also">${alsoOnBallot.map((c) => `
+            <a href="#/city/${esc(place.key)}/${c.kind === "measure" ? "measure" : "contest"}/${esc(c.id)}">
+              ${esc(c.title)}<small>${c.kind === "measure" ? "Ballot measure"
+                : `${c.candidates.length} candidate${c.candidates.length === 1 ? "" : "s"}`}</small></a>`).join("")}
+          </div></div>` : ""}
+      </aside>
     </div>
-
-    ${resourceSection("Debates & candidate forums", debates, { contest, excludeName: person.name })}
-    ${resourceSection("Interviews & coverage", interviews)}
-    ${resourceSection("More information", info, { contest, excludeName: person.name })}
-
-    ${alsoOnBallot.length ? `<div class="page-sec"><h3>Also on your ballot</h3>
-      <div class="also">${alsoOnBallot.map((c) => `
-        <a href="#/city/${esc(place.key)}/${c.kind === "measure" ? "measure" : "contest"}/${esc(c.id)}">
-          ${esc(c.title)}<small>${c.kind === "measure" ? "Ballot measure"
-            : `${c.candidates.length} candidate${c.candidates.length === 1 ? "" : "s"}`}</small></a>`).join("")}
-      </div></div>` : ""}
 
     <p class="neutrality">Civic Gateway does not endorse candidates. Links are provided so you can
     hear candidates in their own words and from independent coverage; inclusion is not an
