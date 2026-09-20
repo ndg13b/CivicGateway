@@ -464,6 +464,84 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 
 /* ---------- Everything that is not the ballot ---------- */
 
+/* ---------- The picker: tabs, address fields, street combobox ---------- */
+
+.picker-tabs {
+  display: flex; gap: var(--s1);
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: var(--s4);
+}
+.picker-tab {
+  font-family: var(--font-ui);
+  font-size: .72rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3); background: none;
+  border: none; border-bottom: 2px solid transparent;
+  padding: var(--s2) var(--s3); margin-bottom: -1px;
+  min-height: 44px; cursor: pointer;
+}
+.picker-tab:hover { color: var(--ink); }
+.picker-tab.is-active { color: var(--ink); border-bottom-color: var(--accent); }
+.picker-tab:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+.addr-fields { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: flex-end; }
+.field-num { flex: 0 0 7rem; }
+.field-street { flex: 1 1 18rem; min-width: 0; position: relative; }
+.field-go { flex: 0 0 auto; }
+
+.addr-fields input {
+  width: 100%; min-height: 46px;
+  padding: 0 var(--s3);
+  font: inherit; font-size: 1rem; color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+}
+.addr-fields input:focus-visible { outline: 2px solid var(--link); outline-offset: -1px; }
+#addrFind {
+  min-height: 46px; padding: 0 var(--s5);
+  font-family: var(--font-ui); font-size: .78rem; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--surface); background: var(--ink);
+  border: 1px solid var(--ink); cursor: pointer; white-space: nowrap;
+}
+#addrFind:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* The list overlays what follows, so the card doesn't jump as you type. */
+.street-list {
+  position: absolute; z-index: 20; left: 0; right: 0; top: 100%;
+  margin-top: 2px; list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  box-shadow: 0 6px 18px rgba(20, 18, 16, .12);
+  max-height: 17rem; overflow-y: auto;
+}
+.street-list li {
+  display: flex; align-items: baseline; gap: var(--s3);
+  padding: var(--s2) var(--s3); min-height: 44px;
+  border-bottom: 1px solid var(--rule); cursor: pointer;
+}
+.street-list li:last-child { border-bottom: none; }
+.street-list li.is-active, .street-list li:hover { background: var(--paper-2); }
+.street-name { color: var(--ink); font-size: .98rem; }
+.street-city {
+  margin-left: auto;
+  font-family: var(--font-ui); font-size: .72rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--ink-4); white-space: nowrap;
+}
+
+.picker-alt { margin-top: var(--s3); }
+.linkish {
+  font: inherit; font-size: .92rem; color: var(--link);
+  background: none; border: none; padding: var(--s2) 0;
+  min-height: 44px; text-decoration: underline; cursor: pointer;
+}
+.picker-msg { margin-top: var(--s3); font-size: .92rem; color: var(--ink-3); }
+.picker-msg.warn { color: var(--accent); }
+
+@media (max-width: 560px) {
+  .field-num, .field-street, .field-go { flex: 1 1 100%; }
+  #addrFind { width: 100%; }
+}
+
 /* ---------- Address narrowing ----------
    Sits inside the ballot sheet, because narrowing the ballot is ballot
    business. Quiet until used, then it states plainly what was hidden. */
@@ -474,21 +552,12 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   background: var(--paper-2);
   border: 1px solid var(--rule);
 }
-.addr-tool label {
-  display: block;
+.addr-prompt {
   color: var(--ink-3); font-size: .88rem; line-height: 1.5;
   max-width: var(--measure);
 }
-.addr-tool label strong { color: var(--ink); font-weight: 600; }
+.addr-prompt strong { color: var(--ink); font-weight: 600; }
 .addr-row { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
-.addr-row input {
-  flex: 1 1 18rem; min-width: 0; min-height: 44px;
-  padding: 0 var(--s3);
-  font: inherit; font-size: .95rem; color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--rule-strong);
-}
-.addr-row input:focus-visible { outline: 2px solid var(--link); outline-offset: -1px; }
 .addr-row button {
   min-height: 44px; padding: 0 var(--s4);
   font-family: var(--font-ui); font-size: .78rem; font-weight: 700;

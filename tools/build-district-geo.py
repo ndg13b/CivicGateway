@@ -50,6 +50,15 @@ CITIES = ["Maryland Heights city", "Creve Coeur city", "Bridgeton city",
           "Overland city", "Town and Country city"]
 
 
+# Must match slugify() in assets/app.js, which builds the same key from the
+# jurisdiction name and state: "Maryland Heights" -> "maryland-heights-mo".
+def slugify_city(name, state="mo"):
+    slug = "".join(c if c.isalnum() else "-" for c in name.lower())
+    while "--" in slug:
+        slug = slug.replace("--", "-")
+    return f"{slug.strip('-')}-{state}"
+
+
 def post(url, params):
     req = urllib.request.Request(
         url, data=urllib.parse.urlencode(params).encode(), headers=UA)
@@ -90,6 +99,16 @@ def main():
         "congress_layer": CONGRESS_LAYER,
         "districts": [],
     }
+
+    # City outlines too, so "use my location" can tell which city a point is in
+    # without a round trip — and can say plainly when it is in none of them.
+    for name, geom in places.items():
+        out["districts"].append({
+            "kind": "city",
+            "name": name.replace(" city", ""),
+            "slug": slugify_city(name.replace(" city", "")),
+            "geometry": mapping(geom.simplify(0.00005, preserve_topology=True)),
+        })
 
     for kind, layer in (("us_house", CONGRESS_LAYER), ("school", SCHOOL_LAYER)):
         for name, geom in fetch(layer).items():
