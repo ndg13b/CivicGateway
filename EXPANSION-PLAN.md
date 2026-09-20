@@ -339,15 +339,32 @@ Bridgeton's 0.9% Ritenour sliver is genuine and included: a handful of
 Bridgeton residents do vote on those measures, and omitting a real ballot item
 is worse than showing one behind an "if you live in…" note.
 
-### Still outstanding
+### County Council — resolved September 2026
 
-**County Council.** Districts 1, 3, 5 and 7 are on the ballot. Which council
-district each of our cities falls in is not in any dataset reachable from the
-build environment, and the council map is not published as queryable boundary
-geometry. A County Council scope exists with an election and no races, so the
-site says the contest is not listed rather than looking complete. To resolve
-it, a council district map or a sample ballot showing the council contest is
-needed.
+The council map *is* published: `Council_District_Plan_2022` on the county's
+ArcGIS service, found through the Geospatial Data Center at
+[gis.stlouiscountymo.gov](https://gis.stlouiscountymo.gov). The earlier note
+that it was unavailable was wrong — it simply had not been found.
+
+Coverage, percent of each city's area:
+
+| City | Council districts | On the 2026 ballot? |
+|---|---|---|
+| Bridgeton | 2 (99.9%) | **No contest** — District 2 is mid-term |
+| Maryland Heights | 2 (97.7%), 7 (1.4%) | Only the 1.4% votes, in District 7 |
+| Overland | 2 (60.2%), 1 (39.8%) | The 39.8% votes, in District 1 |
+| Creve Coeur | 2 (59.2%), 3 (40.8%) | The 40.8% votes, in District 3 |
+| Town and Country | 3 (99.99%) | Yes, District 3 |
+
+Districts 1, 3, 5 and 7 are on the 2026 ballot; 2, 4 and 6 are mid-term. That
+one fact does most of the work: **Bridgeton has no council contest at all**,
+and most of Maryland Heights, Overland and Creve Coeur do not either.
+
+District 2 is shipped in `districts.geo.json` with a null slug precisely so
+the site can say "District 2 — no contests here" rather than going quiet.
+
+With this, **every contest on the November ballot is accounted for**, and the
+"more contests are expected" notice no longer appears for any city.
 
 ### The congressional map — a correction worth remembering
 

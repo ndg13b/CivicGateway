@@ -1367,7 +1367,7 @@ function searchStreets(query, limit = 8) {
 
 // Which scope levels an address can settle. A level absent here is never
 // filtered, so a scope we cannot resolve (County Council) keeps showing.
-const RESOLVABLE = ["us_house", "school"];
+const RESOLVABLE = ["us_house", "school", "county"];
 
 async function loadGeo() {
   if (GEO) return GEO;
