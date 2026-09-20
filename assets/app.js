@@ -321,6 +321,9 @@ function mapPerson(p, extra = {}) {
     website: p.website || null,
     twitter: p.twitter || null,
     facebook: p.facebook || null,
+    instagram: p.instagram || null,
+    linkedin: p.linkedin || null,
+    youtube: p.youtube || null,
     incumbent: !!p.incumbent,
     resources: (p.resource_links || []).map((l) => l.resources).filter(Boolean),
     ...extra,
@@ -684,15 +687,67 @@ function onCityChange() {
 
 /* ---------- Shared render pieces ---------- */
 
+/* ---------- Contact links ----------
+
+   One prominent link to the official or campaign site, then the social
+   accounts as small marks. A candidate with six accounts and one with two
+   should look comparable at a glance — a flat list makes the busier campaign
+   look better documented, which is the same asymmetry the labelled slots
+   exist to avoid. The site is the thing worth a real click; the rest are
+   doors to the same person.                                                */
+
+// Handle or full URL, either way. Stored data is inconsistent because it comes
+// from several sources, and demanding one shape would just lose accounts.
+function socialUrl(base, value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (/^https?:\/\//i.test(raw)) return safeUrl(raw);
+  return safeUrl(base + encodeURIComponent(raw.replace(/^@/, "")));
+}
+
+const SOCIALS = [
+  { key: "twitter",   label: "X (Twitter)", base: "https://twitter.com/",
+    path: "M18.9 2H22l-6.8 7.7L23 22h-6.3l-4.9-6.4L6.2 22H3l7.3-8.3L2.4 2h6.4l4.4 5.9L18.9 2Zm-1.1 18h1.7L8.3 3.8H6.5L17.8 20Z" },
+  { key: "facebook",  label: "Facebook", base: "https://facebook.com/",
+    path: "M22 12a10 10 0 1 0-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0 0 22 12Z" },
+  { key: "instagram", label: "Instagram", base: "https://instagram.com/",
+    path: "M12 2.2c3.2 0 3.6 0 4.9.1 3.3.1 4.8 1.7 4.9 4.9.1 1.3.1 1.6.1 4.8s0 3.6-.1 4.9c-.1 3.2-1.7 4.8-4.9 4.9-1.3.1-1.6.1-4.9.1s-3.6 0-4.9-.1c-3.2-.1-4.8-1.7-4.9-4.9C2.2 15.6 2.2 15.2 2.2 12s0-3.6.1-4.9c.1-3.2 1.7-4.8 4.9-4.9C8.4 2.2 8.8 2.2 12 2.2Zm0 5.1a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4Zm0 7.7a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm4.9-7.9a1.1 1.1 0 1 0 0-2.2 1.1 1.1 0 0 0 0 2.2Z" },
+  { key: "linkedin",  label: "LinkedIn", base: "https://www.linkedin.com/in/",
+    path: "M6.9 21H3.3V9.3h3.6V21ZM5.1 7.7a2.1 2.1 0 1 1 0-4.2 2.1 2.1 0 0 1 0 4.2ZM21 21h-3.6v-5.7c0-1.4 0-3.1-1.9-3.1s-2.2 1.5-2.2 3V21H9.7V9.3h3.4V11h.1a3.8 3.8 0 0 1 3.4-1.9c3.6 0 4.3 2.4 4.3 5.5V21Z" },
+  { key: "youtube",   label: "YouTube", base: "https://youtube.com/@",
+    path: "M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4a2.5 2.5 0 0 0-1.8 1.8A26 26 0 0 0 2 12a26 26 0 0 0 .4 4.8 2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8A26 26 0 0 0 22 12a26 26 0 0 0-.4-4.8ZM10 15.1V8.9l5.2 3.1-5.2 3.1Z" },
+];
+
 function contactLinks(c) {
-  const parts = [];
   const site = safeUrl(c.website);
-  if (site) parts.push(`<a class="link" href="${esc(site)}" target="_blank" rel="noopener">Website</a>`);
-  if (c.email) parts.push(`<a class="link" href="mailto:${esc(c.email)}">Email</a>`);
-  if (c.phone) parts.push(`<a class="link" href="tel:${esc(String(c.phone).replace(/[^0-9+]/g, ""))}">${esc(c.phone)}</a>`);
-  if (c.twitter) parts.push(`<a class="link" href="https://twitter.com/${encodeURIComponent(String(c.twitter).replace("@", ""))}" target="_blank" rel="noopener">X / Twitter</a>`);
-  if (c.facebook) parts.push(`<a class="link" href="https://facebook.com/${encodeURIComponent(c.facebook)}" target="_blank" rel="noopener">Facebook</a>`);
-  return parts.join("");
+  const out = [];
+
+  if (site) {
+    let host = site;
+    try { host = new URL(site).hostname.replace(/^www\./, ""); } catch { /* keep full */ }
+    out.push(`<a class="site-link" href="${esc(site)}" target="_blank" rel="noopener">
+        <span class="site-link-label">${c.role === "candidate" ? "Campaign website" : "Official website"}</span>
+        <span class="site-link-host">${esc(host)}</span>
+      </a>`);
+  }
+
+  const marks = [];
+  for (const s of SOCIALS) {
+    const url = socialUrl(s.base, c[s.key]);
+    if (!url) continue;
+    marks.push(`<a class="social" href="${esc(url)}" target="_blank" rel="noopener"
+        title="${esc(s.label)}" aria-label="${esc(s.label)}">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="${s.path}"/></svg>
+      </a>`);
+  }
+  if (marks.length) out.push(`<div class="socials">${marks.join("")}</div>`);
+
+  const direct = [];
+  if (c.email) direct.push(`<a class="link" href="mailto:${esc(c.email)}">Email</a>`);
+  if (c.phone) direct.push(`<a class="link" href="tel:${esc(String(c.phone).replace(/[^0-9+]/g, ""))}">${esc(c.phone)}</a>`);
+  if (direct.length) out.push(`<div class="links">${direct.join("")}</div>`);
+
+  return out.join("");
 }
 
 const RESOURCE_ICONS = { debate: "▶", interview: "🎤", info: "📄" };

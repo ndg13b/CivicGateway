@@ -803,6 +803,44 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   font-family: var(--font-ui); font-size: .72rem; color: var(--ink-4);
 }
 
+/* ---------- Contact: one real link, then small marks ---------- */
+
+.site-link {
+  display: inline-flex; flex-direction: column; gap: 2px;
+  padding: var(--s3) var(--s4);
+  min-height: 48px; justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--rule-strong);
+  border-left: 3px solid var(--accent);
+  text-decoration: none; max-width: 100%;
+}
+.site-link:hover { border-color: var(--accent); background: var(--accent-soft); }
+.site-link-label {
+  font-family: var(--font-ui);
+  font-size: .68rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.site-link-host {
+  font-family: var(--font-display); font-size: 1.04rem; color: var(--link);
+  overflow-wrap: anywhere;
+}
+.site-link:hover .site-link-host { text-decoration: underline; }
+
+/* Small and uniform on purpose: a campaign with six accounts and one with two
+   should read as comparable, not as one being better documented. */
+.socials { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+.social {
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border: 1px solid var(--rule); border-radius: 50%;
+  color: var(--ink-3); background: var(--surface);
+}
+.social svg { width: 16px; height: 16px; fill: currentColor; }
+.social:hover { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+.social:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+
+.slot-body .links { margin-top: var(--s3); }
+
 .coverage-note {
   margin-top: var(--s5); padding: var(--s3) var(--s4);
   background: var(--paper-2); border-left: 2px solid var(--rule-strong);
