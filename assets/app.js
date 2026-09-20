@@ -725,8 +725,15 @@ function contactLinks(c) {
   if (site) {
     let host = site;
     try { host = new URL(site).hostname.replace(/^www\./, ""); } catch { /* keep full */ }
+    // Label by what the link IS, not by what we were hoping to find. Sitting
+    // members' listed sites are usually their .gov office page, and calling
+    // that a "campaign website" next to a challenger's actual campaign site
+    // would compare two different things while implying they match.
+    const official = /\.gov$/i.test(host) || /\.gov$/i.test(host.split(":")[0]);
     out.push(`<a class="site-link" href="${esc(site)}" target="_blank" rel="noopener">
-        <span class="site-link-label">${c.role === "candidate" ? "Campaign website" : "Official website"}</span>
+        <span class="site-link-label">${
+          official ? "Official office page"
+                   : c.role === "candidate" ? "Campaign website" : "Website"}</span>
         <span class="site-link-host">${esc(host)}</span>
       </a>`);
   }
