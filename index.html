@@ -11,7 +11,7 @@
 <meta property="og:url" content="https://civicgateway.org/">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='7' fill='%2316202f'/%3E%3Cpath d='M7 34C7 15 12.5 8 20 8s13 7 13 26' fill='none' stroke='%23fff' stroke-width='2.8' stroke-linecap='round'/%3E%3C/svg%3E">
-<link rel="stylesheet" href="assets/styles.css?v=16">
+<link rel="stylesheet" href="assets/styles.css?v=17">
 </head>
 <body>
 
@@ -41,19 +41,57 @@
   </div>
 
   <div class="card" id="pickerCard">
-    <div class="picker-row" id="pickerRow">
-      <!-- Hidden while only one state has data; returns on its own if a
-           second state is ever added. The data model is unchanged. -->
-      <div class="field" id="stateField">
-        <label for="state">State</label>
-        <select id="state" disabled><option value="">Loading…</option></select>
-      </div>
-      <div class="field">
-        <label for="city">City</label>
-        <select id="city" disabled><option value="">Loading…</option></select>
-      </div>
+    <!-- Address leads, because it gives a ballot with nothing left to work out.
+         Picking a city is the fallback for anyone who would rather not type an
+         address, or whose street we don't have. -->
+    <div class="picker-tabs" role="tablist" aria-label="How to find your ballot">
+      <button type="button" role="tab" id="tabAddress" aria-controls="paneAddress"
+              aria-selected="true" class="picker-tab is-active">By address</button>
+      <button type="button" role="tab" id="tabCity" aria-controls="paneCity"
+              aria-selected="false" class="picker-tab">By city</button>
     </div>
-    <p class="picker-hint">Coverage is growing across St.&nbsp;Louis County, Missouri.</p>
+
+    <div class="picker-pane" id="paneAddress" role="tabpanel" aria-labelledby="tabAddress">
+      <div class="addr-fields">
+        <div class="field field-num">
+          <label for="houseNo">Number</label>
+          <input type="text" id="houseNo" inputmode="numeric" autocomplete="address-line1"
+                 placeholder="1234">
+        </div>
+        <div class="field field-street">
+          <label for="streetInput">Street</label>
+          <input type="text" id="streetInput" autocomplete="off" spellcheck="false"
+                 role="combobox" aria-expanded="false" aria-autocomplete="list"
+                 aria-controls="streetList" placeholder="Start typing a street name">
+          <ul class="street-list" id="streetList" role="listbox" hidden></ul>
+        </div>
+        <div class="field field-go">
+          <button type="button" id="addrFind">Find my ballot</button>
+        </div>
+      </div>
+      <div class="picker-alt">
+        <button type="button" id="useLocation" class="linkish">Use my location instead</button>
+      </div>
+      <div class="picker-msg" id="pickerMsg" hidden></div>
+    </div>
+
+    <div class="picker-pane" id="paneCity" role="tabpanel" aria-labelledby="tabCity" hidden>
+      <div class="picker-row" id="pickerRow">
+        <!-- Hidden while only one state has data; returns on its own if a
+             second state is ever added. The data model is unchanged. -->
+        <div class="field" id="stateField">
+          <label for="state">State</label>
+          <select id="state" disabled><option value="">Loading…</option></select>
+        </div>
+        <div class="field">
+          <label for="city">City</label>
+          <select id="city" disabled><option value="">Loading…</option></select>
+        </div>
+      </div>
+      <p class="picker-hint">A whole-city ballot shows every contest in that city,
+        noting the ones that depend on your street address.</p>
+    </div>
+
     <div id="status" class="status" hidden></div>
   </div>
 
@@ -84,7 +122,7 @@
     fallbackDataUrl: "assets/fallback-data.json",
   };
 </script>
-<script type="module" src="assets/app.js?v=16"></script>
+<script type="module" src="assets/app.js?v=17"></script>
 
 </body>
 </html>

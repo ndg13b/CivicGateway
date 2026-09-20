@@ -754,6 +754,147 @@ function renderCity(place) {
   paint(html);
 }
 
+/* ---------- The picker: address combobox and tabs ---------- */
+
+let STREET_PICK = null;   // the street the visitor actually chose
+let STREET_HITS = [];
+let STREET_AT = -1;
+
+function pickerMsg(text, kind = "info") {
+  const el = $("pickerMsg");
+  if (!el) return;
+  el.textContent = text;
+  el.className = `picker-msg ${kind}`;
+  el.hidden = !text;
+}
+
+function closeStreetList() {
+  const list = $("streetList"), input = $("streetInput");
+  if (list) { list.hidden = true; list.innerHTML = ""; }
+  if (input) input.setAttribute("aria-expanded", "false");
+  STREET_HITS = []; STREET_AT = -1;
+}
+
+function renderStreetList(hits) {
+  const list = $("streetList"), input = $("streetInput");
+  if (!list) return;
+  STREET_HITS = hits; STREET_AT = -1;
+  if (!hits.length) { closeStreetList(); return; }
+  list.innerHTML = hits.map((h, i) => `
+    <li role="option" id="street-opt-${i}" data-i="${i}" aria-selected="false">
+      <span class="street-name">${esc(h.name)}</span>
+      <span class="street-city">${esc(h.city)}</span>
+    </li>`).join("");
+  list.hidden = false;
+  input.setAttribute("aria-expanded", "true");
+  for (const li of list.querySelectorAll("li")) {
+    // mousedown, not click: blur would close the list before click landed.
+    li.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      chooseStreet(Number(li.dataset.i));
+    });
+  }
+}
+
+function highlightStreet(next) {
+  const list = $("streetList");
+  if (!list || !STREET_HITS.length) return;
+  STREET_AT = (next + STREET_HITS.length) % STREET_HITS.length;
+  list.querySelectorAll("li").forEach((li, i) => {
+    const on = i === STREET_AT;
+    li.classList.toggle("is-active", on);
+    li.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  $("streetInput").setAttribute("aria-activedescendant", `street-opt-${STREET_AT}`);
+}
+
+function chooseStreet(i) {
+  const hit = STREET_HITS[i];
+  if (!hit) return;
+  STREET_PICK = hit;
+  $("streetInput").value = hit.name;
+  closeStreetList();
+  pickerMsg(`${hit.name} is in ${hit.city}.`);
+  const num = $("houseNo");
+  if (num && !num.value) num.focus();
+}
+
+async function onStreetInput() {
+  const input = $("streetInput");
+  STREET_PICK = null;
+  try { await loadStreets(); }
+  catch { pickerMsg("Street list unavailable — use the city tab instead.", "warn"); return; }
+  renderStreetList(searchStreets(input.value));
+}
+
+function onStreetKey(e) {
+  if (e.key === "ArrowDown") { e.preventDefault(); highlightStreet(STREET_AT + 1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); highlightStreet(STREET_AT - 1); }
+  else if (e.key === "Enter") {
+    if (STREET_AT >= 0) { e.preventDefault(); chooseStreet(STREET_AT); }
+    else if (STREET_HITS.length === 1) { e.preventDefault(); chooseStreet(0); }
+    else onFindBallot();
+  } else if (e.key === "Escape") closeStreetList();
+}
+
+// Resolve the chosen street even when the visitor typed it out and never
+// touched the list — an exact normalized match is as good as a click.
+function settledStreet() {
+  if (STREET_PICK) return STREET_PICK;
+  const typed = normalizeStreet(($("streetInput") || {}).value || "");
+  if (!typed) return null;
+  const exact = STREET_INDEX.filter((s) => s.key === typed);
+  return exact.length === 1 ? exact[0] : null;
+}
+
+async function onFindBallot() {
+  closeStreetList();
+  try { await loadStreets(); }
+  catch { pickerMsg("Street list unavailable — use the city tab instead.", "warn"); return; }
+
+  const street = settledStreet();
+  if (!street) {
+    pickerMsg("Pick a street from the list so we know which city you're in.", "warn");
+    return;
+  }
+  const raw = (($("houseNo") || {}).value || "").trim();
+  if (!raw) { pickerMsg("Add your house number.", "warn"); $("houseNo").focus(); return; }
+
+  // Catch a wrong number here rather than letting the geocoder return nothing
+  // and leaving the visitor to guess which half was wrong.
+  const n = parseInt(raw, 10);
+  if (Number.isFinite(n) && street.lo != null && (n < street.lo || n > street.hi)) {
+    pickerMsg(
+      `${street.name} runs from ${street.lo} to ${street.hi}. Check the number — ` +
+      `or use the city tab if that address is right.`, "warn");
+    return;
+  }
+
+  pickerMsg("Looking up your districts…");
+  const query = `${raw} ${street.name}, ${street.city}, MO`;
+  try {
+    const { lon, lat, label } = await geocode(query);
+    await resolvePoint(lon, lat, label, street.city);
+  } catch (err) {
+    pickerMsg(
+      String(err.message) === "no match"
+        ? `We couldn't place ${raw} ${street.name}. Use the city tab to see the whole ${street.city} ballot.`
+        : "The address lookup is unavailable right now. The city tab still works.",
+      "warn");
+  }
+}
+
+function showPane(which) {
+  const addr = which === "address";
+  for (const [tab, pane, on] of [["tabAddress", "paneAddress", addr],
+                                 ["tabCity", "paneCity", !addr]]) {
+    const t = $(tab), p = $(pane);
+    if (t) { t.classList.toggle("is-active", on); t.setAttribute("aria-selected", String(on)); }
+    if (p) p.hidden = !on;
+  }
+  pickerMsg("");
+}
+
 /* ---------- Address tool behaviour ---------- */
 
 function addrMsg(text, kind = "info") {
@@ -767,50 +908,72 @@ function addrMsg(text, kind = "info") {
 // Anything that fails here leaves the full city ballot on screen. The tool is
 // a narrowing convenience on top of a correct page, never a gate in front of
 // one, so every failure path says what happened and changes nothing.
-async function resolvePoint(lon, lat, label) {
+// `hintCity` is the city the street list already told us. Geolocation has no
+// such hint, so the point is tested against the city outlines instead.
+async function resolvePoint(lon, lat, label, hintCity = null) {
   await loadGeo();
   const districts = districtsAt(lon, lat);
-  const any = RESOLVABLE.some((l) => districts[l]);
-  if (!any) {
-    addrMsg("That address is outside the areas we have boundaries for. Showing the whole city.", "warn");
+  const city = cityAt(lon, lat) ||
+    (hintCity ? { slug: slugify(`${hintCity}-MO`), name: hintCity } : null);
+
+  if (!city) {
+    const msg = "That location is outside the cities we cover yet. " +
+                "Your county and state contests are the same either way — " +
+                "pick a nearby city to see them.";
+    if ($("pickerMsg")) pickerMsg(msg, "warn"); else addrMsg(msg, "warn");
     return;
   }
+  if (!PLACES[city.slug]) {
+    const msg = `We don't have ${city.name} yet. Your state and county contests still apply.`;
+    if ($("pickerMsg")) pickerMsg(msg, "warn"); else addrMsg(msg, "warn");
+    return;
+  }
+
   LOCATION = { label, districts };
   try {
     sessionStorage.setItem("civic.location", JSON.stringify(LOCATION));
   } catch { /* private browsing; the narrowing just won't outlive this page */ }
   refreshBallots();
-  route();
+  // Routing by hash rather than calling render directly keeps the back button
+  // working, and keeps the address itself out of the URL.
+  if (location.hash !== `#/city/${city.slug}`) location.hash = `#/city/${city.slug}`;
+  else route();
 }
 
-async function onAddressCheck() {
-  const input = $("addrInput");
-  const value = (input && input.value || "").trim();
-  if (!value) { addrMsg("Enter a street address first.", "warn"); return; }
-  addrMsg("Looking up…");
-  try {
-    const { lon, lat, label } = await geocode(value);
-    await resolvePoint(lon, lat, label);
-  } catch (err) {
-    addrMsg(
-      String(err.message) === "no match"
-        ? "We couldn't find that address. Check the spelling, or use the whole-city ballot below."
-        : "The address lookup is unavailable right now. The whole-city ballot below is unaffected.",
-      "warn");
+function cityAt(lon, lat) {
+  for (const d of (GEO && GEO.districts) || []) {
+    if (d.kind === "city" && inGeometry(lon, lat, d.geometry)) return d;
   }
+  return null;
+}
+
+// The picker is above the ballot and may be scrolled off; move focus as well
+// as the scroll so keyboard users land in the field too.
+function jumpToAddressPicker() {
+  showPane("address");
+  const card = $("pickerCard");
+  if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
+  const street = $("streetInput");
+  if (street) { street.focus({ preventScroll: true }); loadStreets().catch(() => {}); }
+}
+
+// Used from the picker and from inside a ballot, so messages go to whichever
+// of the two message areas is currently on the page.
+function locMsg(text, kind = "info") {
+  if ($("pickerMsg")) pickerMsg(text, kind); else addrMsg(text, kind);
 }
 
 function onUseLocation() {
   if (!navigator.geolocation) {
-    addrMsg("This browser can't share your location.", "warn");
+    locMsg("This browser can't share your location. Type an address instead.", "warn");
     return;
   }
-  addrMsg("Asking your browser for your location…");
+  locMsg("Asking your browser for your location…");
   navigator.geolocation.getCurrentPosition(
     (pos) => resolvePoint(pos.coords.longitude, pos.coords.latitude, "your location")
-      .catch(() => addrMsg("Couldn't load district boundaries.", "warn")),
-    () => addrMsg("Location permission was declined. You can type an address instead.", "warn"),
-    { timeout: 10000, maximumAge: 300000 });
+      .catch(() => locMsg("Couldn't load district boundaries.", "warn")),
+    () => locMsg("Location permission was declined. You can type an address instead.", "warn"),
+    { timeout: 10000, maximumAge: 60000 });
 }
 
 function clearLocation() {
@@ -834,10 +997,9 @@ function refreshBallots() {
 // Rendering replaces the results element wholesale, so the controls are bound
 // after each paint rather than once at boot.
 function bindAddressTool() {
-  on("addrGo", "click", onAddressCheck);
+  on("addrJump", "click", jumpToAddressPicker);
   on("addrGeo", "click", onUseLocation);
   on("addrClear", "click", clearLocation);
-  on("addrInput", "keydown", (e) => { if (e.key === "Enter") onAddressCheck(); });
 }
 
 function cityLinksRow(p) {
@@ -948,15 +1110,14 @@ function addressTool(place, b) {
       </div>`;
   }
 
+  // Rather than a second address box with different behaviour from the one in
+  // the picker, send people to the picker. One address control, one set of
+  // rules about what it accepts.
   return `<div class="addr-tool">
-      <label for="addrInput"><strong>Some contests below depend on your street address.</strong>
-        Enter it and we will show only the ones you vote on. It is sent to the
-        U.S. Census geocoder to find your districts, and is never stored or
-        put in the page address.</label>
+      <p class="addr-prompt"><strong>Some contests below depend on your street address.</strong>
+        Give us the address and we will show only the ones you vote on.</p>
       <div class="addr-row">
-        <input type="text" id="addrInput" placeholder="123 Main St, ${esc(place.name)}, MO"
-               autocomplete="street-address" inputmode="text">
-        <button type="button" id="addrGo">Check</button>
+        <button type="button" id="addrJump">Narrow to my address</button>
         <button type="button" id="addrGeo" class="secondary">Use my location</button>
       </div>
       <div class="addr-msg" id="addrMsg" hidden></div>
@@ -1126,8 +1287,65 @@ let LOCATION = null;   // { label, districts: {us_house: "MO-1", school: "…"|n
 let GEO = null;        // lazily fetched districts.geo.json
 
 const GEO_URL = "assets/districts.geo.json";
+const STREETS_URL = "assets/streets.json";
 const CENSUS_LOCATIONS =
   "https://geocoding.geo.census.gov/geocoder/locations/onelineaddress";
+
+let STREETS = null;    // { "Maryland Heights": [["Adie Rd", 2400, 11999], …] }
+let STREET_INDEX = []; // flattened, searchable: { city, name, lo, hi, key }
+
+// The geocoder has no fuzzy matching: a wrong suffix or a house number that
+// doesn't exist returns nothing at all, with no suggestion. Completing against
+// the real street list removes that failure rather than handling it — the
+// visitor never types the fragile part. Picking a street also settles which
+// city they are in, so no city has to be chosen first.
+async function loadStreets() {
+  if (STREETS) return STREETS;
+  const res = await withTimeout(fetch(STREETS_URL), FETCH_TIMEOUT_MS);
+  if (!res.ok) throw new Error(`street list unavailable (${res.status})`);
+  STREETS = await res.json();
+  STREET_INDEX = [];
+  for (const [city, list] of Object.entries(STREETS)) {
+    for (const [name, lo, hi] of list) {
+      STREET_INDEX.push({ city, name, lo, hi, key: normalizeStreet(name) });
+    }
+  }
+  return STREETS;
+}
+
+// Fold the things people vary: case, punctuation, and the handful of suffix
+// abbreviations that account for most mistyped addresses.
+const SUFFIXES = {
+  street: "st", avenue: "ave", road: "rd", drive: "dr", lane: "ln",
+  court: "ct", circle: "cir", boulevard: "blvd", place: "pl", terrace: "ter",
+  parkway: "pkwy", trail: "trl", way: "way", square: "sq", highway: "hwy",
+  north: "n", south: "s", east: "e", west: "w",
+};
+
+function normalizeStreet(s) {
+  return String(s).toLowerCase().replace(/[.,'']/g, "").split(/\s+/)
+    .map((w) => SUFFIXES[w] || w).filter(Boolean).join(" ");
+}
+
+// Rank by where the query lands: the start of the name first, then the start
+// of any later word, and only then mid-word. Without the word-boundary rule,
+// typing "main" offers "Romaine Ave", which is a substring match and a useless
+// suggestion. Mid-word hits are kept, but only when nothing better exists.
+function searchStreets(query, limit = 8) {
+  const q = normalizeStreet(query);
+  if (q.length < 2) return [];
+  const strong = [], weak = [];
+  for (const s of STREET_INDEX) {
+    const at = s.key.indexOf(q);
+    if (at < 0) continue;
+    const wordStart = at === 0 || s.key[at - 1] === " ";
+    const entry = { ...s, rank: at * 10 + s.name.length };
+    (wordStart ? strong : weak).push(entry);
+  }
+  const pick = strong.length ? strong : weak;
+  pick.sort((a, b) => a.rank - b.rank || a.name.localeCompare(b.name));
+  return pick.slice(0, limit);
+}
 
 // Which scope levels an address can settle. A level absent here is never
 // filtered, so a scope we cannot resolve (County Council) keeps showing.
@@ -1582,6 +1800,17 @@ for (const id of ["reviewedTop", "reviewedFoot"]) {
 const on = (id, ev, fn) => { const el = $(id); if (el) el.addEventListener(ev, fn); };
 on("state", "change", onStateChange);
 on("city", "change", onCityChange);
+
+on("tabAddress", "click", () => showPane("address"));
+on("tabCity", "click", () => showPane("city"));
+on("streetInput", "input", onStreetInput);
+on("streetInput", "keydown", onStreetKey);
+on("streetInput", "blur", () => setTimeout(closeStreetList, 120));
+on("houseNo", "keydown", (e) => { if (e.key === "Enter") onFindBallot(); });
+on("addrFind", "click", onFindBallot);
+on("useLocation", "click", onUseLocation);
+// Warm the street list on first focus so the first keystroke already completes.
+on("streetInput", "focus", () => { loadStreets().catch(() => {}); });
 window.addEventListener("popstate", route);
 window.addEventListener("hashchange", route);
 
