@@ -874,6 +874,21 @@ async function onFindBallot() {
   const query = `${raw} ${street.name}, ${street.city}, MO`;
   try {
     const { lon, lat, label } = await geocode(query);
+
+    // The geocoder's answer has to agree with the street list about which
+    // city this is. A mismatch means the lookup landed somewhere else —
+    // through a stale index, an ambiguous name, or a bad response — and
+    // acting on it would show someone another city's ballot.
+    await loadGeo();
+    const landed = cityAt(lon, lat);
+    if (landed && landed.name !== street.city) {
+      pickerMsg(
+        `That lookup came back in ${landed.name}, not ${street.city}. ` +
+        `Showing ${landed.name} — switch to the city tab if that's wrong.`);
+    } else if (!landed) {
+      pickerMsg(`We couldn't place that inside ${street.city}. Use the city tab instead.`, "warn");
+      return;
+    }
     await resolvePoint(lon, lat, label, street.city);
   } catch (err) {
     pickerMsg(
@@ -933,6 +948,9 @@ async function resolvePoint(lon, lat, label, hintCity = null) {
   try {
     sessionStorage.setItem("civic.location", JSON.stringify(LOCATION));
   } catch { /* private browsing; the narrowing just won't outlive this page */ }
+  // The ballot's own banner now says what was resolved, so the picker's
+  // progress line has nothing left to report.
+  pickerMsg("");
   refreshBallots();
   // Routing by hash rather than calling render directly keeps the back button
   // working, and keeps the address itself out of the URL.
@@ -1395,16 +1413,59 @@ function districtsAt(lon, lat) {
   return found;
 }
 
-async function geocode(address) {
-  const url = `${CENSUS_LOCATIONS}?address=${encodeURIComponent(address)}` +
-              `&benchmark=Public_AR_Current&format=json`;
-  const res = await withTimeout(fetch(url), FETCH_TIMEOUT_MS);
-  if (!res.ok) throw new Error(`lookup failed (${res.status})`);
-  const json = await res.json();
-  const match = ((json.result || {}).addressMatches || [])[0];
-  if (!match) throw new Error("no match");
-  return { lon: match.coordinates.x, lat: match.coordinates.y,
-           label: match.matchedAddress };
+// JSONP, not fetch. The Census geocoder sends no Access-Control-Allow-Origin
+// header, so a cross-origin fetch from this site is blocked by the browser —
+// which is what "the address lookup is unavailable" was reporting. It does
+// support JSONP, and a <script> tag is not subject to CORS.
+//
+// JSONP means running whatever that host returns, so this is narrower than it
+// looks: one fixed https://geocoding.geo.census.gov URL, a one-shot callback
+// removed as soon as it fires or times out, and the response shape checked
+// before anything is read out of it. The caller then confirms the coordinates
+// land inside the city the street list already named, so a wrong or hostile
+// answer cannot quietly move someone to a different ballot.
+//
+// The alternative is proxying through a server of ours, which would mean
+// visitor addresses touching our infrastructure — a worse trade for this site
+// than a script tag pointed at one government host.
+function geocode(address) {
+  return new Promise((resolve, reject) => {
+    const cb = `civicGeo${Date.now()}${Math.floor(Math.random() * 1e6)}`;
+    const script = document.createElement("script");
+    let done = false;
+
+    const cleanup = () => {
+      delete window[cb];
+      script.remove();
+      clearTimeout(timer);
+    };
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true; cleanup();
+      reject(new Error("timed out"));
+    }, FETCH_TIMEOUT_MS);
+
+    window[cb] = (json) => {
+      if (done) return;
+      done = true; cleanup();
+      const match = (((json || {}).result || {}).addressMatches || [])[0];
+      const c = match && match.coordinates;
+      if (!match || typeof c.x !== "number" || typeof c.y !== "number") {
+        reject(new Error("no match"));
+        return;
+      }
+      resolve({ lon: c.x, lat: c.y, label: String(match.matchedAddress || address) });
+    };
+
+    script.onerror = () => {
+      if (done) return;
+      done = true; cleanup();
+      reject(new Error("unreachable"));
+    };
+    script.src = `${CENSUS_LOCATIONS}?address=${encodeURIComponent(address)}` +
+                 `&benchmark=Public_AR_Current&format=jsonp&callback=${cb}`;
+    document.head.appendChild(script);
+  });
 }
 
 /* ---------- Voting logistics ---------- */
