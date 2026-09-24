@@ -129,6 +129,13 @@ const VOTING_GUIDE = {
             detail: "Applications must reach the Board of Elections by 5:00 p.m. (RSMo 115.279).",
           },
           {
+            // Added 24 Sept 2026 from the same county calendar, which marks
+            // Saturday hours as subject to change — hence the detail says so.
+            on: "2026-10-31",
+            label: "Saturday absentee voting",
+            detail: "The Board of Elections, 725 Northwest Plaza Dr., St. Ann, is open for absentee voting from 9:00 a.m. to 1:00 p.m. — the only weekend option. The county says Saturday hours can change, so check its website before you go.",
+          },
+          {
             on: "2026-11-02",
             label: "Last day to vote absentee in person",
             detail: "At the Board of Elections until 5:00 p.m., the day before the election.",
