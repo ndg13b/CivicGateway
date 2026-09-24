@@ -120,8 +120,12 @@ const VOTING_GUIDE = {
           {
             on: "2026-10-20",
             until: "2026-11-02",
-            label: "No-excuse in-person absentee voting opens",
-            detail: "Vote early in person with no reason needed, from 8:00 a.m. (RSMo 115.277).",
+            // Missouri law calls this no-excuse in-person absentee voting; almost
+            // everyone else calls it early voting. The label uses the name voters
+            // know and the detail keeps the legal one, so the row can still be
+            // matched against the county calendar.
+            label: "Early voting opens, no excuse needed",
+            detail: "Legally called no-excuse in-person absentee voting. Vote in person with photo ID and no reason required, from 8:00 a.m. In person only — a mailed ballot still needs one of the ten reasons (RSMo 115.277).",
           },
           {
             on: "2026-10-21",
@@ -132,12 +136,12 @@ const VOTING_GUIDE = {
             // Added 24 Sept 2026 from the same county calendar, which marks
             // Saturday hours as subject to change — hence the detail says so.
             on: "2026-10-31",
-            label: "Saturday absentee voting",
-            detail: "The Board of Elections, 725 Northwest Plaza Dr., St. Ann, is open for absentee voting from 9:00 a.m. to 1:00 p.m. — the only weekend option. The county says Saturday hours can change, so check its website before you go.",
+            label: "Saturday early and absentee voting",
+            detail: "The Board of Elections, 725 Northwest Plaza Dr., St. Ann, is open for early and absentee voting from 9:00 a.m. to 1:00 p.m. — the only weekend option. The county says Saturday hours can change, so check its website before you go.",
           },
           {
             on: "2026-11-02",
-            label: "Last day to vote absentee in person",
+            label: "Last day to vote early or absentee in person",
             detail: "At the Board of Elections until 5:00 p.m., the day before the election.",
           },
           {
