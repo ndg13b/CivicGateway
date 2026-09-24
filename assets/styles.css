@@ -686,6 +686,8 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 .vote-date.passed .vote-date-day,
 .vote-date.passed .vote-date-body strong { color: var(--ink-4); }
 .vote-date.passed .vote-date-detail { display: none; }
+/* An open window is something a voter can go and do today. */
+.vote-date.open .vote-date-status { color: var(--accent); }
 
 .vote-id {
   margin-top: var(--s4);

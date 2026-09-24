@@ -23,7 +23,12 @@
    placed in HTML, and URLs are validated with safeUrl().
    ============================================================ */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// Loaded on demand in fetchFromSupabase(), never as a static import. A static
+// import that fails takes the whole module down before a line of it runs, so
+// the saved copy never gets its chance: with esm.sh unreachable, the live site
+// sat on "Loading…" indefinitely. As a dynamic import, a CDN outage is just
+// one more way the database can be unreachable, and the fallback covers it.
+const SUPABASE_JS = "https://esm.sh/@supabase/supabase-js@2";
 
 const CONFIG = window.CIVIC_CONFIG || {};
 const FETCH_TIMEOUT_MS = 8000;
@@ -81,7 +86,12 @@ const DATA_REVIEWED = "September 2026";
    in the certified-candidate booklet. Statute citations are the county's own.
    Re-verify against the calendar before any future election is added — these
    are the one part of the site where being approximately right is not good
-   enough, because a wrong deadline costs somebody their vote.               */
+   enough, because a wrong deadline costs somebody their vote.
+
+   A date that OPENS something carries `until`, the last day it stays open.
+   Without it, the day absentee voting opened the row turned grey and read
+   "Passed", hiding who qualifies, while it was the one thing a voter could
+   actually go and do.                                                       */
 const VOTING_GUIDE = {
   MO: {
     authority: "St. Louis County Board of Elections",
@@ -98,6 +108,7 @@ const VOTING_GUIDE = {
         dates: [
           {
             on: "2026-09-22",
+            until: "2026-11-02",
             label: "Absentee voting opens, with an excuse",
             detail: "By mail or in person, if one of the state's ten reasons applies to you — being away on Election Day, illness, military service and others. Opens 8:00 a.m. (RSMo 115.279).",
           },
@@ -108,6 +119,7 @@ const VOTING_GUIDE = {
           },
           {
             on: "2026-10-20",
+            until: "2026-11-02",
             label: "No-excuse in-person absentee voting opens",
             detail: "Vote early in person with no reason needed, from 8:00 a.m. (RSMo 115.277).",
           },
@@ -218,6 +230,7 @@ const RACE_SELECT = `
   )`;
 
 async function fetchFromSupabase() {
+  const { createClient } = await withTimeout(import(SUPABASE_JS), FETCH_TIMEOUT_MS);
   const supabase = createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
 
   const jurisdictions = supabase.from("jurisdictions").select(`
@@ -1579,10 +1592,17 @@ function renderVotingInfo(place) {
 
   const rows = guide.dates.map((d) => {
     const days = daysUntil(d.on);
-    const passed = days !== null && days < 0;
+    const started = days !== null && days < 0;
+    // A window that has opened and not yet closed is the opposite of passed.
+    // (Compared explicitly: null >= 0 is true in JavaScript.)
+    const left = d.until ? daysUntil(d.until) : null;
+    const open = started && left !== null && left >= 0;
+    const passed = started && !open;
     const isNext = next && next.on === d.on;
-    const status = passed ? "Passed" : days === null ? "" : countdown(days);
-    return `<li class="vote-date${passed ? " passed" : ""}${isNext ? " next" : ""}">
+    const status = open ? "Open now"
+      : passed ? (d.until ? "Closed" : "Passed")
+      : days === null ? "" : countdown(days);
+    return `<li class="vote-date${passed ? " passed" : ""}${open ? " open" : ""}${isNext ? " next" : ""}">
         <span class="vote-date-day">${esc(formatShortDate(d.on))}</span>
         <span class="vote-date-body">
           <strong>${esc(d.label)}</strong>
