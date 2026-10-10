@@ -70,7 +70,7 @@ const LOOKUP_LINKS = `<a href="https://house.mo.gov/legislatorlookup.aspx" targe
 
 // Shown in the masthead dateline and the footer. One constant so the two can
 // never drift apart — they did, and sat three weeks stale.
-const DATA_REVIEWED = "September 2026";
+const DATA_REVIEWED = "October 2026";
 
 /* ---------- Voting logistics ----------
    Knowing what is on the ballot is only half of it; the other half is knowing
@@ -84,6 +84,10 @@ const DATA_REVIEWED = "September 2026";
    VERIFIED 13 Sept 2026 against the St. Louis County Board of Elections
    2026/2027 Election Calendar and the Secretary of State's Notice of Election
    in the certified-candidate booklet. Statute citations are the county's own.
+   The mailed-ballot return deadline was added 10 Oct 2026: RSMo 115.293 counts
+   absentee ballots received by the close of polls, which the county board's
+   2024 FAQ and the City of St. Louis board's 2026 election page both state as
+   7:00 p.m. on Election Day. The notary note is from the Secretary of State's how-to-vote page.
    Re-verify against the calendar before any future election is added — these
    are the one part of the site where being approximately right is not good
    enough, because a wrong deadline costs somebody their vote.
@@ -110,7 +114,7 @@ const VOTING_GUIDE = {
             on: "2026-09-22",
             until: "2026-11-02",
             label: "Absentee voting opens, with an excuse",
-            detail: "By mail or in person, if one of the state's ten reasons applies to you — being away on Election Day, illness, military service and others. Opens 8:00 a.m. (RSMo 115.279).",
+            detail: "By mail or in person, if one of the state's ten reasons applies to you — being away on Election Day, illness, military service and others. Opens 8:00 a.m. (RSMo 115.279). Most mailed ballots need a notary's signature on the return envelope; the instructions that come with yours say whether it does.",
           },
           {
             on: "2026-10-07",
@@ -130,7 +134,7 @@ const VOTING_GUIDE = {
           {
             on: "2026-10-21",
             label: "Last day to request a mailed ballot",
-            detail: "Applications must reach the Board of Elections by 5:00 p.m. (RSMo 115.279).",
+            detail: "Applications must reach the Board of Elections by 5:00 p.m. (RSMo 115.279). The ballot itself then has to be back by 7:00 p.m. on Election Day, so leave time for the mail both ways.",
           },
           {
             // Added 24 Sept 2026 from the same county calendar, which marks
@@ -147,7 +151,10 @@ const VOTING_GUIDE = {
           {
             on: "2026-11-03",
             label: "Election Day",
-            detail: "Polls are open 6:00 a.m. to 7:00 p.m. Bring photo ID.",
+            // The return deadline lives here rather than on the request-deadline
+            // row: passed rows hide their detail, and this is the row still
+            // showing when someone has a mailed ballot on the kitchen table.
+            detail: "Polls are open 6:00 a.m. to 7:00 p.m. Bring photo ID. Voting by mail? Your ballot must reach the Board of Elections by 7:00 p.m. — a postmark is not enough (RSMo 115.293).",
           },
         ],
       },
