@@ -912,6 +912,14 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 .res-title { display: block; font-family: var(--font-display); font-weight: 700; color: var(--ink); }
 .res-meta { display: block; color: var(--ink-3); font-size: .85rem; margin-top: 1px; }
 .res-shared { display: inline-block; font-size: .76rem; color: var(--ink-3); margin-top: var(--s1); font-style: italic; }
+.res-note { display: block; color: var(--ink-2); font-size: .85rem; margin-top: var(--s1); }
+.empty-note { color: var(--ink-3); font-size: .92rem; font-style: italic; }
+
+/* Contest titles on the ballot are links to the race page; they should still
+   read as ballot headings, not as blue body links. */
+.contest-link { color: inherit; text-decoration: none; }
+.contest-link:hover, .contest-link:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
+.district-option .doh .chip-btn { margin-left: var(--s3); text-transform: none; letter-spacing: 0; font-weight: 400; }
 
 .also { display: flex; gap: var(--s3); flex-wrap: wrap; }
 .also a {
