@@ -94,7 +94,6 @@ a { color: var(--link); }
   text-align: center;
 }
 .brand { display: block; text-decoration: none; color: inherit; }
-.brand-mark { display: block; margin: 0 auto var(--s2); color: var(--ink); }
 .brand-name {
   display: block;
   font-family: var(--font-display);
