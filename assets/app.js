@@ -793,19 +793,55 @@ const RESOURCE_ICONS = { debate: "▶", interview: "🎤", info: "📄" };
 function resourceCard(r, alsoCovers = []) {
   const url = safeUrl(r.url);
   if (!url) return "";
-  const meta = [r.source, r.published_on ? formatShortDate(r.published_on) : null, r.note]
+  const meta = [r.source, r.published_on ? formatShortDate(r.published_on) : null]
     .filter(Boolean).map(esc).join(" · ");
   const shared = alsoCovers.length
     ? `<span class="res-shared">Also covers: ${alsoCovers.map(esc).join(", ")}</span>` : "";
+  // The note gets its own line: it is where a link says who it leaves out
+  // ("recorded before the primary; X was not part of it"), and that should
+  // read as a sentence, not as a fourth item in the byline.
   return `
     <a class="res" href="${esc(url)}" target="_blank" rel="noopener">
       <span class="res-ico" aria-hidden="true">${RESOURCE_ICONS[r.kind] || "🔗"}</span>
       <span class="res-body">
         <span class="res-title">${esc(r.title)}</span>
         ${meta ? `<span class="res-meta">${meta}</span>` : ""}
+        ${r.note ? `<span class="res-note">${esc(r.note)}</span>` : ""}
         ${shared}
       </span>
     </a>`;
+}
+
+// The chip on a ballot card. Says how much is behind it, so "nothing yet" and
+// "three links" don't look the same from the ballot.
+function raceLinkLabel(c) {
+  const n = (c.resources || []).length;
+  return n ? `Debates &amp; info (${n})` : "Race page";
+}
+
+// What a race or measure page links to, and what it deliberately doesn't.
+// Shown on every one of those pages, so the rule is public and the same
+// everywhere. A function, not a constant: SUGGEST_URL is defined further down.
+function resourceStandards() {
+  return `<p class="neutrality">What we link here: recordings and reports of debates
+  and candidate forums, nonpartisan election guides, official documents, and straight
+  news coverage. We leave out endorsements, opinion pieces and campaign material.
+  Anything published by the government asking voters to approve a measure is labeled
+  as such. Civic Gateway does not endorse candidates or take positions on measures.
+  <a href="${SUGGEST_URL}" target="_blank" rel="noopener">Suggest something we've
+  missed</a>.</p>`;
+}
+
+const VOTE411_URL = "https://www.vote411.org/";
+
+// A section that is always present. Empty, it says so plainly — on a race page
+// "no debate has been held" is information, and a missing heading would hide it.
+function resourceBlock(label, resources, emptyText) {
+  return `<div class="page-sec"><h3>${esc(label)}</h3>
+    ${resources.length
+      ? resources.map((r) => resourceCard(r)).join("")
+      : `<p class="empty-note">${esc(emptyText)} <a href="${SUGGEST_URL}" target="_blank" rel="noopener">Suggest one</a></p>`}
+  </div>`;
 }
 
 function resourceSection(label, resources, { contest = null, excludeName = null } = {}) {
@@ -1289,12 +1325,14 @@ function renderContest(place, c, num) {
     c.scopeLabel,
   ].filter(Boolean).join(" · ");
 
+  // Every contest has a page, whether or not we have found anything to put on
+  // it yet. Hiding the link until a debate turns up made the page impossible
+  // to find, and an empty page that says so is itself useful to a voter.
   return `
     <div class="contest">
       <div class="contest-head">
-        <h4>${itemNumber(num)}${esc(c.title)}</h4>
-        ${c.resources.length
-          ? `<div class="contest-actions"><a class="chip-btn" href="${esc(href)}">Debates &amp; info</a></div>` : ""}
+        <h4>${itemNumber(num)}<a class="contest-link" href="${esc(href)}">${esc(c.title)}</a></h4>
+        <div class="contest-actions"><a class="chip-btn" href="${esc(href)}">${raceLinkLabel(c)}</a></div>
       </div>
       <div class="contest-sub">${esc(sub)}</div>
       ${c.description ? `<p class="race-description">${esc(c.description)}</p>` : ""}
@@ -1317,7 +1355,8 @@ function renderVariantGroup(place, group, num) {
   for (const v of group.variants) {
     html += `
       <div class="district-option">
-        <div class="doh">If you're in ${esc(v.scopeShort || v.scopeLabel)}</div>
+        <div class="doh">If you're in ${esc(v.scopeShort || v.scopeLabel)}
+          <a class="chip-btn" href="#/city/${esc(place.key)}/contest/${esc(v.id)}">${raceLinkLabel(v)}</a></div>
         <div class="people-grid tight">
           ${v.candidates.length
             ? v.candidates.map((cand) => personCard(cand, personHref(place, cand), { note: cand.party, compact: true })).join("")
@@ -1906,8 +1945,19 @@ function renderContestPage(place, contest) {
         : `<p class="nothing">Candidates aren't certified yet.</p>`}
     </div>
 
-    ${resourceSection("Debates & candidate forums", contest.resources.filter((r) => r.kind === "debate"))}
-    ${resourceSection("Voter information", contest.resources.filter((r) => r.kind === "info"))}
+    ${resourceBlock("Debates & candidate forums",
+      contest.resources.filter((r) => r.kind === "debate"),
+      "We don't know of a recorded debate or candidate forum for this race yet.")}
+    ${resourceBlock("Impartial information",
+      contest.resources.filter((r) => r.kind === "info"),
+      "We haven't found a nonpartisan guide or news coverage of this race yet.")}
+
+    ${contest.candidates.length > 1 ? `<div class="page-sec"><h3>Compare the candidates in their own words</h3>
+      <p>The League of Women Voters' <a href="${VOTE411_URL}" target="_blank" rel="noopener">VOTE411</a>
+      guide sends every candidate in a race the same questions and publishes the answers they
+      send back. Enter your address there to see the races on your ballot.</p></div>` : ""}
+
+    ${resourceStandards()}
     </article>`;
 
   paint(html);
@@ -1932,11 +1982,17 @@ function renderMeasurePage(place, measure) {
          <div class="official-text">${esc(measure.officialText)}</div></div>` : ""}
     ${measure.description ? `<div class="page-sec"><h3>Summary</h3><p>${esc(measure.description)}</p></div>` : ""}
     <div class="page-sec"><h3>How the vote works</h3>
-      <p>A <strong>YES</strong> vote supports the measure as written above.
-      A <strong>NO</strong> vote opposes it, leaving current law unchanged.</p></div>
-    ${resourceSection("Arguments and analysis", measure.resources)}
-    <p class="neutrality">Civic Gateway takes no position on ballot measures. Where we link
-    supporting and opposing material, we aim to link both.</p>
+      ${/^Retention\s+[—–-]/.test(measure.title)
+        // "Leaving current law unchanged" is the opposite of what NO does here.
+        ? `<p>A <strong>YES</strong> vote keeps the judge in office for a new term.
+           A <strong>NO</strong> vote is a vote to remove the judge. A judge who gets
+           more NO votes than YES votes leaves office, and the seat is filled by a
+           new appointment.</p>`
+        : `<p>A <strong>YES</strong> vote supports the measure as written above.
+           A <strong>NO</strong> vote opposes it, leaving current law unchanged.</p>`}</div>
+    ${resourceBlock("Official documents & impartial coverage", measure.resources,
+      "We haven't linked any official documents or news coverage for this question yet.")}
+    ${resourceStandards()}
     </article>`;
 
   paint(html);
