@@ -696,6 +696,21 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   display: flex; flex-wrap: wrap; gap: var(--s4);
   margin-top: var(--s3); font-size: .92rem;
 }
+/* The county's own lookups: where to vote early, where to vote on the day,
+   and the official sample ballot. The three things a voter most needs that
+   only the election authority can answer for their exact address. */
+.vote-lookups {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s2) var(--s4);
+  margin-top: var(--s4); padding: var(--s3) var(--s4);
+  background: var(--paper-2); border-left: 2px solid var(--accent);
+  font-size: .95rem;
+}
+.vote-lookups-from {
+  flex-basis: 100%;
+  font-size: .68rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+.vote-lookups a { font-weight: 600; }
 
 @media (max-width: 560px) {
   .vote-date { grid-template-columns: 1fr auto; }

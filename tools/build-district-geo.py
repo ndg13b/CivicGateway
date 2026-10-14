@@ -57,6 +57,7 @@ SLUGS = {
     # seat simply is not up this year, rather than saying nothing.
     "District 1": "Council 1",
     "District 3": "Council 3",
+    "District 5": "Council 5",
     "District 7": "Council 7",
 }
 
@@ -143,8 +144,11 @@ def main():
         for name, geom in layer.items():
             if not geom.intersects(covered):
                 continue
-            # Require a real overlap with a city, not a shared boundary line.
-            if geom.intersection(covered).area / covered.area < 0.0005:
+            # Require a real overlap with a city, not a shared boundary line —
+            # measured against each city on its own. Measuring against all five
+            # cities together dropped Council District 5, which is only 0.08% of
+            # Creve Coeur's area but holds a whole voting precinct (CC042).
+            if max(geom.intersection(c).area / c.area for c in places.values()) < 0.0005:
                 continue
             simplified = geom.intersection(clip).simplify(
                 0.00005, preserve_topology=True)
