@@ -88,6 +88,11 @@ const DATA_REVIEWED = "October 2026";
    absentee ballots received by the close of polls, which the county board's
    2024 FAQ and the City of St. Louis board's 2026 election page both state as
    7:00 p.m. on Election Day. The notary note is from the Secretary of State's how-to-vote page.
+   Early voting sites and hours were added 14 Oct 2026 from the Board of
+   Elections' own 2026 lookup (lookup_app_abs_2026_11 on its ArcGIS account,
+   updated 22 Sept 2026): the Board plus 20 satellite sites from October 20,
+   and BOTH Saturdays. The county's printed calendar lists only October 31,
+   which is how "the only weekend option" got onto this page. It was wrong.
    Re-verify against the calendar before any future election is added — these
    are the one part of the site where being approximately right is not good
    enough, because a wrong deadline costs somebody their vote.
@@ -109,6 +114,16 @@ const VOTING_GUIDE = {
     elections: {
       "2026-11-03": {
         pollHours: "6:00 a.m. to 7:00 p.m.",
+        // The Board of Elections' own lookup tools for this election, on its
+        // ArcGIS account. Election-specific, so they live here, not above.
+        lookups: [
+          { label: "Find an early voting site near you",
+            url: "https://stlouiscovotes.maps.arcgis.com/apps/instant/nearby/index.html?appid=9301b4594bef4d9c9271778e4648179d" },
+          { label: "Find your Election Day polling place",
+            url: "https://stlouiscovotes.maps.arcgis.com/apps/instant/nearby/index.html?appid=13fb36e785c84dbdbcc5219f999652ba" },
+          { label: "See your official sample ballot",
+            url: "https://stlouiscovotes.maps.arcgis.com/apps/instant/lookup/index.html?appid=4c3116b104af40bea77ebea20aaae275" },
+        ],
         dates: [
           {
             on: "2026-09-22",
@@ -129,7 +144,7 @@ const VOTING_GUIDE = {
             // know and the detail keeps the legal one, so the row can still be
             // matched against the county calendar.
             label: "Early voting opens, no excuse needed",
-            detail: "Legally called no-excuse in-person absentee voting. Vote in person with photo ID and no reason required, from 8:00 a.m. In person only — a mailed ballot still needs one of the ten reasons (RSMo 115.277).",
+            detail: "Legally called no-excuse in-person absentee voting. Vote in person with photo ID and no reason required, at the Board of Elections or any of 20 satellite sites around the county — libraries, community centers and others. Weekdays 8:00 a.m. to 4:30 p.m. through October 30. In person only — a mailed ballot still needs one of the ten reasons (RSMo 115.277).",
           },
           {
             on: "2026-10-21",
@@ -137,16 +152,19 @@ const VOTING_GUIDE = {
             detail: "Applications must reach the Board of Elections by 5:00 p.m. (RSMo 115.279). The ballot itself then has to be back by 7:00 p.m. on Election Day, so leave time for the mail both ways.",
           },
           {
-            // Added 24 Sept 2026 from the same county calendar, which marks
-            // Saturday hours as subject to change — hence the detail says so.
+            on: "2026-10-24",
+            label: "Saturday early and absentee voting",
+            detail: "The Board of Elections and all 20 satellite sites are open 9:00 a.m. to 1:00 p.m.",
+          },
+          {
             on: "2026-10-31",
             label: "Saturday early and absentee voting",
-            detail: "The Board of Elections, 725 Northwest Plaza Dr., St. Ann, is open for early and absentee voting from 9:00 a.m. to 1:00 p.m. — the only weekend option. The county says Saturday hours can change, so check its website before you go.",
+            detail: "The last Saturday before the election. The Board of Elections, 725 Northwest Plaza Dr., St. Ann, and all 20 satellite sites are open 9:00 a.m. to 1:00 p.m.",
           },
           {
             on: "2026-11-02",
             label: "Last day to vote early or absentee in person",
-            detail: "At the Board of Elections until 5:00 p.m., the day before the election.",
+            detail: "At the Board of Elections and all 20 satellite sites, 8:00 a.m. to 5:00 p.m., the day before the election.",
           },
           {
             on: "2026-11-03",
@@ -1683,6 +1701,13 @@ function renderVotingInfo(place) {
            we are a volunteer project, not an election office.</p>
       </div>
       <ol class="vote-dates">${rows}</ol>
+      ${(guide.lookups || []).length ? `<div class="vote-lookups">
+        <span class="vote-lookups-from">From the ${esc(guide.authority)}:</span>
+        ${guide.lookups.map((l) => {
+          const u = safeUrl(l.url);
+          return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)}</a>` : "";
+        }).join("")}
+      </div>` : ""}
       <p class="vote-id">${esc(guide.idNote)}</p>
       <div class="vote-links">
         ${authority ? `<a href="${esc(authority)}" target="_blank" rel="noopener">${esc(guide.authority)}</a>` : ""}
