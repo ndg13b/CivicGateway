@@ -549,8 +549,8 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 }
 
 /* ---------- Address narrowing ----------
-   Sits inside the ballot sheet, because narrowing the ballot is ballot
-   business. Quiet until used, then it states plainly what was hidden. */
+   Sits just above the ballot sheet, so the sheet holds only the ballot.
+   Quiet until used, then it states plainly which districts it found. */
 
 .addr-tool {
   margin: var(--s3) 0 0;
