@@ -484,16 +484,14 @@ function buildBallot(place) {
 
   // With an address resolved, drop the scopes this address is not in. Only
   // levels we actually resolved are filtered — a scope we cannot pin down
-  // (County Council) still shows for everyone, which is the honest default.
-  const excluded = [];
+  // (state House and Senate lines) still shows for everyone, which is the
+  // honest default.
   const keepScope = (s) => {
     if (!LOCATION) return true;
     const resolved = LOCATION.districts[s.level];
     if (resolved === undefined) return true;          // level not resolvable
     if (!s.partial) return true;                      // covers the whole city
-    const mine = resolved && resolved.slug === s.shortName;
-    if (!mine) excluded.push(s.label);
-    return mine;
+    return Boolean(resolved && resolved.slug === s.shortName);
   };
 
   const contests = [];
@@ -570,7 +568,6 @@ function buildBallot(place) {
     name,
     note,
     pending: [...new Set(pending)],
-    excluded: [...new Set(excluded)],
     sections,
     hasContests: contests.length > 0,
     otherDates: [...new Set(dates)].filter((d) => d !== date).sort(),
@@ -1313,18 +1310,21 @@ function addressTool(place, b) {
   if (!citySplits(place)) return "";
 
   if (LOCATION) {
+    // The districts the address landed in — at most one per level, so this
+    // stays short however many cities are added. It is how a visitor can
+    // tell the lookup worked. (What was removed is the inverse, and it grew
+    // with every district we cover, so it is no longer listed.)
     const bits = [];
     for (const level of RESOLVABLE) {
       const d = LOCATION.districts[level];
-      if (d && d.slug) bits.push(d.name);
-      else if (d) bits.push(`${d.name} (no contests here)`);
+      if (!d) continue;
+      const name = level === "county" ? `County Council ${d.name}` : d.name;
+      bits.push(d.slug ? name : `${name} (nothing on this ballot)`);
     }
     return `<div class="addr-tool resolved">
         <div class="addr-resolved">
           <strong>Showing the ballot for ${esc(LOCATION.label)}</strong>
-          ${bits.length ? `<span class="addr-districts">${esc(bits.join(" · "))}</span>` : ""}
-          ${b.excluded.length
-            ? `<span class="addr-districts">Hidden: ${esc(b.excluded.join(", "))}</span>` : ""}
+          ${bits.length ? `<span class="addr-districts">Your districts: ${esc(bits.join(" · "))}</span>` : ""}
         </div>
         <button type="button" class="addr-clear" id="addrClear">Show the whole city again</button>
       </div>`;
