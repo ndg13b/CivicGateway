@@ -919,6 +919,9 @@ function renderCity(place) {
     </div>
     ${deadlineBanner(place)}`;
 
+  // Where this ballot is for, and how to narrow it, sit above the ballot
+  // sheet rather than inside it: the sheet holds the ballot and nothing else.
+  if (place.ballot && place.ballot.hasContests) html += addressTool(place);
   html += renderBallot(place);
   html += renderVotingInfo(place);
   // The city's own site and accounts are useful, but not before the ballot.
@@ -1241,8 +1244,7 @@ function renderBallot(place) {
       ${b.hasContests ? `<a class="walk-cta" href="${walkHref(place)}">${
         Object.keys(picksFor(b.date)).length ? "Continue walking through my ballot" : "Walk me through my ballot"} →</a>` : ""}
     </div>
-    ${ballotSummary(b)}
-    ${addressTool(place, b)}`;
+    ${ballotSummary(b)}`;
 
   // The caveat belongs with the ballot, but at its end: read first, it was a
   // paragraph between the visitor and every race.
@@ -1306,7 +1308,7 @@ function citySplits(place) {
     (d) => d.partial && RESOLVABLE.includes(d.level));
 }
 
-function addressTool(place, b) {
+function addressTool(place) {
   if (!citySplits(place)) return "";
 
   if (LOCATION) {
