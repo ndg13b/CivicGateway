@@ -90,7 +90,7 @@ a { color: var(--link); }
 .masthead {
   border-top: 3px double var(--ink);
   border-bottom: 1px solid var(--ink);
-  padding: var(--s5) 0 var(--s4);
+  padding: var(--s4) 0 var(--s3);
   text-align: center;
 }
 .brand { display: block; text-decoration: none; color: inherit; }
@@ -105,7 +105,7 @@ a { color: var(--link); }
 }
 .brand-tag {
   display: block;
-  margin-top: var(--s3);
+  margin-top: var(--s2);
   font-size: .68rem;
   font-weight: 500;
   letter-spacing: .26em;
@@ -132,29 +132,23 @@ main {
   width: 100%;
   max-width: var(--shell);
   margin: 0 auto;
-  padding: var(--s7) var(--s5) var(--s8);
+  padding: var(--s5) var(--s5) var(--s8);
 }
 
-.intro { max-width: var(--measure); margin-bottom: var(--s5); }
+/* One quiet line, not a headline: the picker below it is the point. */
+.intro { max-width: var(--measure); margin-bottom: var(--s3); }
 .intro h1 {
   font-family: var(--font-display);
-  font-size: clamp(1.9rem, 1.3rem + 2vw, 2.5rem);
+  font-size: 1.15rem;
   font-weight: 400;
-  line-height: 1.14;
-  letter-spacing: -0.01em;
-  color: var(--ink);
-  margin-bottom: var(--s3);
+  font-style: italic;
+  line-height: 1.4;
+  color: var(--ink-2);
   text-wrap: balance;
 }
-.intro p {
-  color: var(--ink-3);
-  font-family: var(--font-display);
-  font-size: 1.16rem;
-  font-style: italic;
-}
 
-.card { margin-bottom: var(--s6); }
-#pickerCard { border-bottom: 1px solid var(--rule); padding-bottom: var(--s5); }
+.card { margin-bottom: var(--s5); }
+#pickerCard { border-bottom: 1px solid var(--rule); padding-bottom: var(--s4); }
 
 /* ---------- Picker ---------- */
 
@@ -234,6 +228,14 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   color: var(--ink);
 }
 .jurisdiction-header .county { color: var(--ink-3); font-size: .92rem; }
+.change-place { margin-left: auto; font-size: .88rem; min-height: 36px; padding: 0; }
+
+.city-links-sec { margin-top: var(--s6); }
+.city-links-label {
+  display: block;
+  font-size: .68rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ink-3);
+}
 
 .city-links { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s3); }
 .link {
@@ -263,14 +265,14 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   background: var(--paper);
   border: 1px solid var(--rule);
   box-shadow: 0 1px 2px rgba(26, 24, 21, .05), 0 12px 28px -18px rgba(26, 24, 21, .35);
-  padding: var(--s6) var(--s6) var(--s5);
-  margin: var(--s5) 0 0;
+  padding: var(--s5) var(--s6) var(--s5);
+  margin: var(--s4) 0 0;
 }
 
 .ballot-head {
-  padding-bottom: var(--s4);
+  padding-bottom: var(--s3);
   border-bottom: 3px double var(--ink);
-  margin-bottom: var(--s4);
+  margin-bottom: var(--s3);
 }
 .ballot-head .kicker {
   font-size: .66rem; font-weight: 700; letter-spacing: .24em; text-transform: uppercase;
@@ -278,14 +280,19 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 }
 .ballot-head h3 {
   font-family: var(--font-display);
-  font-size: 1.7rem; font-weight: 400; letter-spacing: -0.005em;
-  color: var(--ink); margin: var(--s2) 0 2px;
+  font-size: 1.45rem; font-weight: 400; letter-spacing: -0.005em;
+  color: var(--ink); margin: var(--s1) 0 0;
+}
+.ballot-head h3 .when {
+  display: inline-block;
+  font-family: var(--font-ui); font-size: .92rem; color: var(--ink-2);
+  margin-left: var(--s2);
 }
 .ballot-head .when { color: var(--ink-2); font-size: .98rem; }
 
 .ballot-summary {
-  display: flex; align-items: baseline; gap: var(--s3) var(--s4); flex-wrap: wrap;
-  margin-bottom: var(--s4);
+  display: flex; align-items: baseline; gap: var(--s2) var(--s4); flex-wrap: wrap;
+  margin-bottom: var(--s3);
 }
 .ballot-count { font-size: .8rem; font-weight: 600; color: var(--ink-2); }
 .ballot-jumps { display: flex; gap: var(--s3); flex-wrap: wrap; margin-left: auto; }
@@ -299,7 +306,7 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   font-size: .86rem; color: var(--ink-2); line-height: 1.6;
   padding-left: var(--s3);
   border-left: 2px solid var(--rule);
-  margin-bottom: var(--s5);
+  margin-top: var(--s4);
 }
 .accuracy-note strong { color: var(--ink); font-weight: 600; }
 .note-status { display: block; margin-top: var(--s2); color: var(--ink-3); font-size: .82rem; }
@@ -546,8 +553,8 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
    business. Quiet until used, then it states plainly what was hidden. */
 
 .addr-tool {
-  margin: var(--s4) 0 0;
-  padding: var(--s4);
+  margin: var(--s3) 0 0;
+  padding: var(--s3) var(--s4);
   background: var(--paper-2);
   border: 1px solid var(--rule);
 }
@@ -556,7 +563,7 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   max-width: var(--measure);
 }
 .addr-prompt strong { color: var(--ink); font-weight: 600; }
-.addr-row { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+.addr-row { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s2); }
 .addr-row button {
   min-height: 44px; padding: 0 var(--s4);
   font-family: var(--font-ui); font-size: .78rem; font-weight: 700;
@@ -566,6 +573,13 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 }
 .addr-row button.secondary { color: var(--ink); background: var(--surface); border-color: var(--rule-strong); }
 .addr-row button:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.addr-row { align-items: center; }
+.addr-row button.linkish {
+  min-height: 44px; padding: 0 var(--s2);
+  font-size: .92rem; font-weight: 400; letter-spacing: 0; text-transform: none;
+  color: var(--link); background: none; border: 0;
+}
+.addr-row button.linkish:hover { color: var(--accent); background: none; }
 
 .addr-msg { margin-top: var(--s3); font-size: .9rem; color: var(--ink-3); }
 .addr-msg.warn { color: var(--accent); }
@@ -636,22 +650,25 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
    The banner is the one place on the page allowed to be loud. It appears only
    inside three weeks of a deadline, so it stays rare enough to mean something. */
 
+/* Flowing text rather than a flex row: on a phone a row of three items
+   became three stacked lines. */
 .deadline-banner {
-  display: flex; align-items: baseline; gap: var(--s3); flex-wrap: wrap;
-  margin: var(--s5) 0 0;
-  padding: var(--s3) var(--s4);
+  display: block; line-height: 1.5;
+  margin: var(--s3) 0 0;
+  padding: var(--s2) var(--s3);
   background: var(--accent-soft);
   border: 1px solid var(--rule-strong);
   border-left: 3px solid var(--accent);
 }
 .deadline-when {
+  margin-right: var(--s2);
   font-family: var(--font-ui);
   font-size: .68rem; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
   color: var(--accent); white-space: nowrap;
 }
 .deadline-what { color: var(--ink-2); font-size: .95rem; }
 .deadline-what strong { color: var(--ink); font-weight: 600; }
-.deadline-link { margin-left: auto; font-size: .9rem; white-space: nowrap; }
+.deadline-link { margin-left: var(--s2); font-size: .9rem; white-space: nowrap; }
 
 .vote-panel { margin-top: var(--s6); }
 
@@ -1141,6 +1158,7 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 }
 
 @media (max-width: 560px) {
+  .ballot-head h3 .when { display: block; margin-left: 0; margin-top: 2px; }
   .walk-nav .walk-btn { flex: 1 1 100%; }
   .walk-option { padding: var(--s3); }
 }
