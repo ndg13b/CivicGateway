@@ -751,6 +751,7 @@ function onStateChange() {
 
 function onCityChange() {
   const key = $("city").value;
+  PICKER_OPEN = false;
   navigate(key ? `/city/${key}` : "/");
 }
 
@@ -910,18 +911,22 @@ function personCard(person, href, { featured = false, note = null, flag = null, 
 /* ---------- View: the city page (ballot + officials) ---------- */
 
 function renderCity(place) {
-  setChrome({ picker: true, selected: place });
+  setChrome({ picker: "fold", selected: place });
 
   let html = `
     <div class="jurisdiction-header">
       <h2>${esc(place.name)}, ${esc(STATE_NAMES[place.state] || place.state)}</h2>
       ${place.county ? `<span class="county">${esc(place.county)}</span>` : ""}
+      <button type="button" class="linkish change-place" id="changePlace"
+              aria-controls="pickerCard" aria-expanded="${PICKER_OPEN}">Change city or address</button>
     </div>
-    ${cityLinksRow(place)}
     ${deadlineBanner(place)}`;
 
   html += renderBallot(place);
   html += renderVotingInfo(place);
+  // The city's own site and accounts are useful, but not before the ballot.
+  const links = cityLinksRow(place);
+  if (links) html += `<div class="city-links-sec"><span class="city-links-label">City of ${esc(place.name)} online</span>${links}</div>`;
   html += renderWhoRepresentsYou(place);
 
   paint(html);
@@ -1120,8 +1125,9 @@ async function resolvePoint(lon, lat, label, hintCity = null) {
   LOCATION = { label, districts, city: city.slug };
   writeKept(KEY_LOCATION, LOCATION);
   // The ballot's own banner now says what was resolved, so the picker's
-  // progress line has nothing left to report.
+  // progress line has nothing left to report — and the picker can fold away.
   pickerMsg("");
+  PICKER_OPEN = false;
   refreshBallots();
   // Routing by hash rather than calling render directly keeps the back button
   // working, and keeps the address itself out of the URL. Someone who came
@@ -1141,7 +1147,24 @@ function cityAt(lon, lat) {
 
 // The picker is above the ballot and may be scrolled off; move focus as well
 // as the scroll so keyboard users land in the field too.
+function openPicker() {
+  PICKER_OPEN = true;
+  const card = $("pickerCard");
+  if (card) card.hidden = false;
+  const btn = $("changePlace");
+  if (btn) btn.setAttribute("aria-expanded", "true");
+}
+
+function onChangePlace() {
+  openPicker();
+  const card = $("pickerCard");
+  if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+  const first = $("tabAddress");
+  if (first) first.focus({ preventScroll: true });
+}
+
 function jumpToAddressPicker() {
+  openPicker();
   showPane("address");
   const card = $("pickerCard");
   if (card) card.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1189,6 +1212,7 @@ function refreshBallots() {
 // Rendering replaces the results element wholesale, so the controls are bound
 // after each paint rather than once at boot.
 function bindAddressTool() {
+  on("changePlace", "click", onChangePlace);
   on("addrJump", "click", jumpToAddressPicker);
   on("addrGeo", "click", onUseLocation);
   on("addrClear", "click", clearLocation);
@@ -1216,14 +1240,16 @@ function renderBallot(place) {
   let html = `<section class="ballot-panel" aria-label="What is on your ballot">
     <div class="ballot-head">
       <div class="kicker">What's on your ballot</div>
-      <h3>${esc(b.name)}</h3>
-      <div class="when">${esc(formatDate(b.date))}</div>
+      <h3>${esc(b.name)} <span class="when">${esc(formatDate(b.date))}</span></h3>
       ${b.hasContests ? `<a class="walk-cta" href="${walkHref(place)}">${
         Object.keys(picksFor(b.date)).length ? "Continue walking through my ballot" : "Walk me through my ballot"} →</a>` : ""}
     </div>
     ${ballotSummary(b)}
-    ${addressTool(place, b)}
-    <div class="accuracy-note">
+    ${addressTool(place, b)}`;
+
+  // The caveat belongs with the ballot, but at its end: read first, it was a
+  // paragraph between the visitor and every race.
+  const accuracy = `<div class="accuracy-note">
       ${LOCATION
         ? `<strong>Narrowed to your address.</strong>
            Contests for districts you are not in have been removed.`
@@ -1234,7 +1260,7 @@ function renderBallot(place) {
     </div>`;
 
   if (!b.hasContests) {
-    return html + `<div class="notice"><strong>Contests for this election aren't listed yet.</strong>
+    return html + accuracy + `<div class="notice"><strong>Contests for this election aren't listed yet.</strong>
       We add each contest and its candidates once they are officially certified.
       In the meantime, your current representatives are listed below.</div>
       </section>`;
@@ -1271,7 +1297,7 @@ function renderBallot(place) {
       yet — we add each one only after confirming it against official sources.
       Your official sample ballot will show everything you can vote on.</div>`;
   }
-  html += `<div class="ballot-end">End of ballot</div></section>`;
+  html += `<div class="ballot-end">End of ballot</div>${accuracy}</section>`;
   return html;
 }
 
@@ -1308,11 +1334,11 @@ function addressTool(place, b) {
   // the picker, send people to the picker. One address control, one set of
   // rules about what it accepts.
   return `<div class="addr-tool">
-      <p class="addr-prompt"><strong>Some contests below depend on your street address.</strong>
-        Give us the address and we will show only the ones you vote on.</p>
+      <p class="addr-prompt"><strong>Some races below depend on your street address.</strong>
+        Add it to see only yours.</p>
       <div class="addr-row">
         <button type="button" id="addrJump">Narrow to my address</button>
-        <button type="button" id="addrGeo" class="secondary">Use my location</button>
+        <button type="button" id="addrGeo" class="linkish">or use my location</button>
       </div>
       <div class="addr-msg" id="addrMsg" hidden></div>
     </div>`;
@@ -1339,11 +1365,14 @@ function ballotSummary(b) {
   }
   if (!offices && !measures && !retentions) return "";
   const bits = [];
-  if (offices) bits.push(`${offices} contest${offices === 1 ? "" : "s"}`);
-  if (retentions) bits.push(`${retentions} judge retention question${retentions === 1 ? "" : "s"}`);
-  if (measures) bits.push(`${measures} ballot measure${measures === 1 ? "" : "s"}`);
+  if (offices) bits.push(`${offices} race${offices === 1 ? "" : "s"}`);
+  if (measures) bits.push(`${measures} measure${measures === 1 ? "" : "s"}`);
+  if (retentions) bits.push(`${retentions} judge${retentions === 1 ? "" : "s"} to keep or remove`);
+  // Short names for the jump links; the section headings keep the full ones.
+  const SHORT = { "Statewide and county measures": "Measures", "Judicial": "Judges",
+                  "City and school measures": "Local measures" };
   const jumps = b.sections
-    .map((s) => `<a href="#sec-${esc(slugify(s.label))}">${esc(s.label)}</a>`)
+    .map((s) => `<a href="#sec-${esc(slugify(s.label))}">${esc(SHORT[s.label] || s.label)}</a>`)
     .join("");
   return `<div class="ballot-summary">
       <span class="ballot-count">${esc(bits.join(" · "))}</span>
@@ -1765,8 +1794,8 @@ function deadlineBanner(place) {
   if (!next || next.days > 21) return "";
   return `<div class="deadline-banner">
       <span class="deadline-when">${esc(countdown(next.days))}</span>
-      <span class="deadline-what"><strong>${esc(next.label)}</strong> — ${esc(formatShortDate(next.on))}</span>
-      <a class="deadline-link" href="#how-to-vote">All key dates</a>
+      <span class="deadline-what"><strong>${esc(next.label)}</strong> — ${esc(formatShortDate(next.on).replace(/, \d{4}$/, ""))}</span>
+      <a class="deadline-link" href="#how-to-vote">All dates</a>
     </div>`;
 }
 
@@ -2621,9 +2650,17 @@ function bindWalkChoices(place) {
 
 /* ---------- Chrome + painting ---------- */
 
+// picker: true   — the full picker (home, "first, your address")
+//         "fold" — a city is showing: the picker is folded away until the
+//                  visitor asks to change city or address. On a phone it was
+//                  over 400px of controls between the visitor and their ballot.
+//         false  — detail pages
+let PICKER_OPEN = false;
+
 function setChrome({ picker, selected }) {
-  if ($("intro")) $("intro").hidden = !picker;
-  if ($("pickerCard")) $("pickerCard").hidden = !picker;
+  const open = picker === true || (picker === "fold" && PICKER_OPEN);
+  if ($("intro")) $("intro").hidden = !(picker === true && !selected);
+  if ($("pickerCard")) $("pickerCard").hidden = !open;
   if (selected) {
     if ($("state").value !== selected.state) {
       $("state").value = selected.state;
@@ -2757,6 +2794,16 @@ on("addrFind", "click", onFindBallot);
 on("useLocation", "click", onUseLocation);
 // Warm the street list on first focus so the first keystroke already completes.
 on("streetInput", "focus", () => { loadStreets().catch(() => {}); });
+document.addEventListener("click", (e) => {
+  const a = e.target.closest && e.target.closest('a[href^="#"]');
+  if (!a) return;
+  const href = a.getAttribute("href");
+  if (href.startsWith("#/") || href === "#") return;     // a real route
+  const target = document.getElementById(decodeURIComponent(href.slice(1)));
+  if (!target) return;
+  e.preventDefault();
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
+});
 window.addEventListener("popstate", route);
 window.addEventListener("hashchange", route);
 
