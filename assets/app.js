@@ -522,27 +522,47 @@ function buildBallot(place) {
     }
   }
 
-  // Propositions and amendments close the ballot, the way they print. Judicial
+  // Propositions and amendments follow the offices, the way they print. Judicial
   // retention questions are the exception: they are measures mechanically —
   // a yes/no on a named judge — but a real ballot prints them as their own
   // block, not among the amendments. Keeping them in the Judicial section also
   // stops fifteen retention questions from burying a constitutional amendment.
+  //
+  // The measures themselves print in a fixed order, checked against all 95 of
+  // the county's November 2026 sample ballots for our cities: statewide
+  // questions, then county, then the judicial retention block, then city, then
+  // school. Statewide and county measures therefore come BEFORE the judges and
+  // local ones after — the order the walkthrough promises to follow.
   const isClosing = (c) => c.kind === "measure" && c.scopeLevel !== "judicial";
-  const measures = contests.filter(isClosing);
+  const MEASURE_RANK = { statewide: 0, county: 1, municipal: 3, school: 4 };
+  const rank = (c) => MEASURE_RANK[c.scopeLevel] ?? 5;
+  // Array sort is stable, so each level keeps its own sort_order.
+  const measures = contests.filter(isClosing).sort((a, b) => rank(a) - rank(b));
+  const earlyMeasures = measures.filter((m) => rank(m) < 2);
+  const lateMeasures = measures.filter((m) => rank(m) >= 2);
   const sectioned = contests.filter((c) => !isClosing(c));
 
   const sections = [];
-  for (const def of BALLOT_SECTIONS) {
+  const pushSection = (def) => {
     const inSection = sectioned.filter((c) => def.levels.includes(c.scopeLevel));
-    if (!inSection.length) continue;
+    if (!inSection.length) return;
     inSection.sort((a, b) =>
       def.levels.indexOf(a.scopeLevel) - def.levels.indexOf(b.scopeLevel));
     // Contests for the same office across sibling districts (e.g. three state
     // house districts covering one city) collapse into one address-varies group.
     sections.push({ label: def.label, groups: groupByOffice(inSection) });
+  };
+  const asGroups = (list) => list.map((m) => ({ single: m }));
+  for (const def of BALLOT_SECTIONS) {
+    if (def.label === "Judicial") {
+      if (earlyMeasures.length) {
+        sections.push({ label: "Statewide and county measures", groups: asGroups(earlyMeasures) });
+      }
+    }
+    pushSection(def);
   }
-  if (measures.length) {
-    sections.push({ label: "Ballot measures", groups: measures.map((m) => ({ single: m })) });
+  if (lateMeasures.length) {
+    sections.push({ label: "City and school measures", groups: asGroups(lateMeasures) });
   }
 
   return {
@@ -1097,17 +1117,18 @@ async function resolvePoint(lon, lat, label, hintCity = null) {
     return;
   }
 
-  LOCATION = { label, districts };
-  try {
-    sessionStorage.setItem("civic.location", JSON.stringify(LOCATION));
-  } catch { /* private browsing; the narrowing just won't outlive this page */ }
+  LOCATION = { label, districts, city: city.slug };
+  writeKept(KEY_LOCATION, LOCATION);
   // The ballot's own banner now says what was resolved, so the picker's
   // progress line has nothing left to report.
   pickerMsg("");
   refreshBallots();
   // Routing by hash rather than calling render directly keeps the back button
-  // working, and keeps the address itself out of the URL.
-  if (location.hash !== `#/city/${city.slug}`) location.hash = `#/city/${city.slug}`;
+  // working, and keeps the address itself out of the URL. Someone who came
+  // here from the walkthrough's "first, your address" step goes back to it.
+  const target = WALK_PENDING ? `#/city/${city.slug}/walk` : `#/city/${city.slug}`;
+  WALK_PENDING = false;
+  if (location.hash !== target) location.hash = target;
   else route();
 }
 
@@ -1149,7 +1170,7 @@ function onUseLocation() {
 
 function clearLocation() {
   LOCATION = null;
-  try { sessionStorage.removeItem("civic.location"); } catch { /* nothing to clear */ }
+  writeKept(KEY_LOCATION, null);
   refreshBallots();
   route();
 }
@@ -1197,6 +1218,8 @@ function renderBallot(place) {
       <div class="kicker">What's on your ballot</div>
       <h3>${esc(b.name)}</h3>
       <div class="when">${esc(formatDate(b.date))}</div>
+      ${b.hasContests ? `<a class="walk-cta" href="${walkHref(place)}">${
+        Object.keys(picksFor(b.date)).length ? "Continue walking through my ballot" : "Walk me through my ballot"} →</a>` : ""}
     </div>
     ${ballotSummary(b)}
     ${addressTool(place, b)}
@@ -1454,11 +1477,100 @@ function personHref(place, person) {
       exactly that mistake. tools/build-district-geo.py pins the layer.
 
    2. THE ADDRESS NEVER LEAVES THE BROWSER, except to the Census geocoder, and
-      never enters the URL. Resolved districts live in memory and sessionStorage
-      so a shared link carries a city, never a home address.                  */
+      never enters the URL. Resolved districts live in memory and in browser
+      storage (see "What this site keeps on your device"), so a shared link
+      carries a city, never a home address.                                   */
 
-let LOCATION = null;   // { label, districts: {us_house: "MO-1", school: "…"|null} }
+let LOCATION = null;   // { label, city, districts: {us_house: "MO-1", school: "…"|null} }
 let GEO = null;        // lazily fetched districts.geo.json
+
+/* ---------- What this site keeps on your device ----------
+   Two things, and only on the device: where you are (the districts an address
+   resolved to) and the choices made in the ballot walkthrough. Nothing is sent
+   anywhere — the site has no server to send it to.
+
+   By default both live in sessionStorage: they survive a refresh and moving
+   between pages, and are gone when the tab closes, so the next person at a
+   library computer starts clean. "Remember on this device" is the visitor's
+   choice to move both into localStorage, so they are still there next visit.
+   "Forget" clears everything, everywhere. Even when remembered, the street
+   address itself is not kept — only the districts it resolved to.
+
+   Never cookies: a cookie is sent with every request for the page, which
+   would hand a voter's choices to the web host for no reason.            */
+const KEY_LOCATION = "civic.location";
+const KEY_PICKS = "civic.picks";
+const KEY_REMEMBER = "civic.remember";
+
+let PICKS = {};        // { "2026-11-03": { "<contest id>": choice, … } }
+
+function remembering() {
+  try { return localStorage.getItem(KEY_REMEMBER) === "1"; } catch { return false; }
+}
+
+function keptStore() {
+  try { return remembering() ? localStorage : sessionStorage; } catch { return null; }
+}
+
+function readKept(key) {
+  try {
+    const s = keptStore();
+    const v = s && s.getItem(key);
+    return v ? JSON.parse(v) : null;
+  } catch { return null; }
+}
+
+function writeKept(key, value) {
+  try {
+    const s = keptStore();
+    if (!s) return;
+    if (value == null) { s.removeItem(key); return; }
+    // A remembered location outlives the visit, so it drops the address.
+    const v = key === KEY_LOCATION && remembering() && value.label !== "your location"
+      ? { ...value, label: "your saved address" } : value;
+    s.setItem(key, JSON.stringify(v));
+  } catch { /* storage unavailable (private mode): it just won't outlive the page */ }
+}
+
+function setRemember(on) {
+  try {
+    if (on) localStorage.setItem(KEY_REMEMBER, "1");
+    else {
+      localStorage.removeItem(KEY_REMEMBER);
+      localStorage.removeItem(KEY_LOCATION);
+      localStorage.removeItem(KEY_PICKS);
+    }
+  } catch { return; }
+  // Re-write both into whichever store now applies, then clear the other.
+  writeKept(KEY_LOCATION, LOCATION);
+  writeKept(KEY_PICKS, PICKS);
+  if (on) {
+    try { sessionStorage.removeItem(KEY_LOCATION); sessionStorage.removeItem(KEY_PICKS); } catch { /* fine */ }
+  }
+}
+
+function forgetEverything() {
+  for (const get of [() => localStorage, () => sessionStorage]) {
+    try {
+      const s = get();
+      for (const k of [KEY_LOCATION, KEY_PICKS, KEY_REMEMBER]) s.removeItem(k);
+    } catch { /* nothing to clear */ }
+  }
+  LOCATION = null;
+  PICKS = {};
+  refreshBallots();
+}
+
+function picksFor(date) {
+  if (!PICKS[date]) PICKS[date] = {};
+  return PICKS[date];
+}
+
+function setPick(date, key, value) {
+  const p = picksFor(date);
+  if (value == null) delete p[key]; else p[key] = value;
+  writeKept(KEY_PICKS, PICKS);
+}
 
 const GEO_URL = "assets/districts.geo.json";
 const STREETS_URL = "assets/streets.json";
@@ -2024,6 +2136,489 @@ function renderMeasurePage(place, measure) {
   document.title = `${measure.title} — Civic Gateway`;
 }
 
+/* ---------- View: walk me through my ballot ----------
+   One race per screen, in ballot order, ending in a review the visitor can
+   print as notes. Three rules shape it:
+
+   1. ONLY RACES THIS VOTER ACTUALLY GETS. Where a city splits across a
+      district the address lookup can settle, the walkthrough asks for the
+      address first. Where it splits across one the lookup cannot settle
+      (state House and Senate lines), the screen asks "which one is on your
+      ballot?" and points to the official sample ballot, rather than guessing.
+
+   2. NEUTRAL. Candidates in ballot order, all presented the same way. Every
+      race can be skipped; nothing is suggested, preselected or summarised.
+
+   3. CHOICES STAY ON THE DEVICE. See "What this site keeps on your device".
+      Steps are addressed by number in the URL; choices never are.          */
+
+let WALK_PENDING = false;   // came to the address picker from the walkthrough
+
+// Same rule as citySplits(), plus: a location resolved in another city does
+// not settle this one.
+function walkNeedsAddress(place) {
+  if (!citySplits(place)) return false;
+  if (!LOCATION) return true;
+  return Boolean(LOCATION.city) && LOCATION.city !== place.key;
+}
+
+function walkSteps(place) {
+  const b = place.ballot;
+  if (!b || !b.hasContests) return [];
+  const steps = [];
+  for (const section of b.sections) {
+    const singles = section.groups.map((g) => g.single);
+    const retentions = singles.filter((c) => c && c.kind === "measure" && c.scopeLevel === "judicial");
+    if (retentions.length && retentions.length === section.groups.length) {
+      // Nineteen near-identical yes/no questions are one screen, not nineteen.
+      steps.push({ type: "retention", key: "retention", section: section.label, contests: retentions });
+      continue;
+    }
+    for (const g of section.groups) {
+      if (g.variants) {
+        steps.push({
+          type: "variants", key: `where::${g.variants[0].scopeLevel}::${g.office}`,
+          section: section.label, office: g.office, variants: g.variants,
+        });
+        continue;
+      }
+      const c = g.single;
+      // Partial and not settled by the address: ask before assuming.
+      const unsure = c.partial && !(LOCATION && RESOLVABLE.includes(c.scopeLevel));
+      steps.push({
+        type: c.kind === "measure" ? "measure" : "office", key: c.id,
+        section: section.label, contest: c, askIfOnBallot: unsure,
+      });
+    }
+  }
+  return steps;
+}
+
+function walkHref(place, step) {
+  return `#/city/${place.key}/walk${step ? `/${step}` : ""}`;
+}
+
+function officialSampleBallotUrl(place) {
+  const g = votingGuide(place);
+  const hit = g && (g.lookups || []).find((l) => /sample ballot/i.test(l.label));
+  return hit ? safeUrl(hit.url) : null;
+}
+
+function rememberControl() {
+  return `<label class="walk-remember">
+      <input type="checkbox" id="walkRemember"${remembering() ? " checked" : ""}>
+      <span><strong>Remember my location and choices on this device</strong>
+      so they are still here if I leave and come back. Leave this off on a shared
+      or public computer.</span>
+    </label>`;
+}
+
+function walkPrivacyNote() {
+  return `<p class="walk-privacy">Your choices stay in this browser. They are never
+    sent anywhere — this site has no server to send them to — and nobody, including
+    us, can see them. <button type="button" class="linkish" id="walkForget">Forget my
+    location and choices</button></p>`;
+}
+
+function renderWalk(place, stepParam) {
+  const b = place.ballot;
+  if (!b || !b.hasContests) return renderCity(place);
+
+  if (walkNeedsAddress(place)) return renderWalkAddress(place);
+  setChrome({ picker: false, selected: place });
+
+  const steps = walkSteps(place);
+  if (stepParam === "review") return renderWalkReview(place, steps);
+  const n = Number(stepParam);
+  if (!stepParam || !Number.isInteger(n) || n < 1 || n > steps.length) {
+    return renderWalkIntro(place, steps);
+  }
+  return renderWalkStep(place, steps, n);
+}
+
+function renderWalkAddress(place) {
+  setChrome({ picker: true, selected: place });
+  WALK_PENDING = true;
+  paint(`
+    <a class="backlink" href="#/city/${esc(place.key)}">‹ Back to the ${esc(place.name)} ballot</a>
+    <article class="detail-sheet walk-sheet">
+      <div class="walk-kicker">Walk through your ballot</div>
+      <h1>First, where you live</h1>
+      <p class="walk-lead">Some races on a ${esc(place.name)} ballot depend on your street
+        address. To walk you through only the races you will actually see, we need it first.
+        It is used to find your districts and is never stored or shared.</p>
+      <div class="addr-row">
+        <button type="button" id="addrJump">Type my address</button>
+        <button type="button" id="addrGeo" class="secondary">Use my location</button>
+      </div>
+      <div class="addr-msg" id="addrMsg" hidden></div>
+    </article>`);
+  document.title = `Walk through your ballot — ${place.name} — Civic Gateway`;
+}
+
+function renderWalkIntro(place, steps) {
+  const b = place.ballot;
+  const picks = picksFor(b.date);
+  const answered = Object.keys(picks).length > 0;
+  paint(`
+    <a class="backlink" href="#/city/${esc(place.key)}">‹ Back to the full ballot</a>
+    <article class="detail-sheet walk-sheet">
+      <div class="walk-kicker">${esc(b.name)} · ${esc(formatDate(b.date))}</div>
+      <h1>Walk through your ballot</h1>
+      <p class="walk-lead">${steps.length} screens, one race at a time, in the order they
+        appear on your ballot${LOCATION ? ` for ${esc(LOCATION.label)}` : ` in ${esc(place.name)}`}.
+        Choose, skip, or come back later. At the end you can print your choices as notes
+        to take with you.</p>
+      <ul class="walk-points">
+        <li>Links open in a new tab, so you won't lose your place.</li>
+        <li>Every race can be skipped. Nothing is filled in for you.</li>
+        <li>Civic Gateway does not endorse candidates or take positions on measures.</li>
+      </ul>
+      ${rememberControl()}
+      <div class="walk-nav">
+        <a class="walk-btn primary" href="${walkHref(place, 1)}">${answered ? "Start from the first race" : "Start"} →</a>
+        ${answered ? `<a class="walk-btn" href="${walkHref(place, "review")}">Review my choices</a>` : ""}
+      </div>
+      ${walkPrivacyNote()}
+    </article>`);
+  bindWalkCommon(place);
+  document.title = `Walk through your ballot — ${place.name} — Civic Gateway`;
+}
+
+function walkProgress(n, total, section) {
+  const pct = Math.round((n / total) * 100);
+  return `<div class="walk-progress">
+      <div class="walk-progress-text"><span>${esc(section)}</span><span>${n} of ${total}</span></div>
+      <div class="walk-bar" role="progressbar" aria-valuemin="1" aria-valuemax="${total}"
+           aria-valuenow="${n}" aria-label="Race ${n} of ${total}"><span style="width:${pct}%"></span></div>
+    </div>`;
+}
+
+// One candidate choice block for an office contest. Values are indexes into
+// the candidate list, so a name never has to survive an HTML attribute.
+function officeChoices(place, c, date) {
+  const pick = picksFor(date)[c.id] || null;
+  const multi = c.voteFor > 1;
+  const type = multi ? "checkbox" : "radio";
+  const chosen = (name) => pick && (pick.name === name || (pick.names || []).includes(name));
+  const items = c.candidates.map((cand, i) => `
+      <label class="walk-option">
+        <input type="${type}" name="pick-${esc(c.id)}" data-contest="${esc(c.id)}" data-i="${i}"${chosen(cand.name) ? " checked" : ""}>
+        <span class="walk-option-body">
+          <span class="walk-option-name">${esc(cand.name)}${cand.incumbent ? '<span class="chip-inc">Incumbent</span>' : ""}</span>
+          ${cand.party ? `<span class="walk-option-meta">${esc(cand.party)}</span>` : ""}
+        </span>
+        <a class="walk-option-more" href="${esc(personHref(place, cand))}" target="_blank" rel="noopener">About ›</a>
+      </label>`).join("");
+  const writeIn = pick && pick.writeIn != null ? pick.writeIn : "";
+  return `<fieldset class="walk-options" data-contest="${esc(c.id)}" data-votefor="${c.voteFor}">
+      <legend>${multi ? `Vote for up to ${c.voteFor}` : "Vote for one"}</legend>
+      ${items}
+      ${multi ? "" : `<label class="walk-option walk-writein">
+        <input type="radio" name="pick-${esc(c.id)}" data-contest="${esc(c.id)}" data-writein="1"${pick && pick.writeIn != null ? " checked" : ""}>
+        <span class="walk-option-body"><span class="walk-option-name">Write in a name</span>
+        <input type="text" class="walk-writein-text" data-contest="${esc(c.id)}" maxlength="80"
+               value="${esc(writeIn)}" aria-label="Write-in name"></span>
+      </label>`}
+      <button type="button" class="linkish walk-clear" data-contest="${esc(c.id)}">Clear my choice</button>
+      <p class="walk-limit" data-contest="${esc(c.id)}" hidden></p>
+    </fieldset>`;
+}
+
+function yesNoChoices(key, date, label = null) {
+  const pick = picksFor(date)[key];
+  return `<div class="walk-yn" role="radiogroup"${label ? ` aria-label="${esc(label)}"` : ""}>
+      ${["yes", "no"].map((v) => `<label class="walk-yn-opt">
+        <input type="radio" name="yn-${esc(key)}" data-yn="${esc(key)}" value="${v}"${pick === v ? " checked" : ""}>
+        <span>${v === "yes" ? "Yes" : "No"}</span></label>`).join("")}
+      <button type="button" class="linkish walk-clear" data-yn-clear="${esc(key)}">Clear</button>
+    </div>`;
+}
+
+function raceLinks(place, c) {
+  const href = `#/city/${place.key}/${c.kind === "measure" ? "measure" : "contest"}/${c.id}`;
+  const res = (c.resources || []).map((r) => resourceCard(r)).join("");
+  return `<div class="walk-links">
+      ${res ? `<h3>Debates &amp; impartial information</h3>${res}` : ""}
+      <a class="walk-racepage" href="${esc(href)}" target="_blank" rel="noopener">Open this race's page in a new tab ↗</a>
+    </div>`;
+}
+
+function renderWalkStep(place, steps, n) {
+  const b = place.ballot;
+  const s = steps[n - 1];
+  let body = "";
+
+  if (s.type === "office" || s.type === "measure") {
+    const c = s.contest;
+    const ask = s.askIfOnBallot ? `
+      <div class="walk-ask">
+        <p><strong>This race is only on some ${esc(place.name)} ballots</strong> — those in
+          ${esc(c.scopeLabel)}. Is it on yours?
+          ${officialSampleBallotUrl(place) ? `<a href="${esc(officialSampleBallotUrl(place))}" target="_blank" rel="noopener">Check your official sample ballot ↗</a>` : ""}</p>
+        <div class="walk-yn">
+          ${[["yes", "Yes, it's on my ballot"], ["no", "No"], ["unsure", "Not sure"]].map(([v, l]) => `
+            <label class="walk-yn-opt"><input type="radio" name="where-${esc(c.id)}" data-where="${esc(`where::${c.id}`)}" value="${v}"${picksFor(b.date)[`where::${c.id}`] === v ? " checked" : ""}><span>${esc(l)}</span></label>`).join("")}
+        </div>
+      </div>` : "";
+    const showChoices = !s.askIfOnBallot || picksFor(b.date)[`where::${c.id}`] === "yes";
+    const choices = s.type === "office" ? officeChoices(place, c, b.date) : `
+      <div class="walk-official">${esc(c.officialText || "")}</div>
+      <p class="walk-how">A <strong>YES</strong> vote supports the measure as written. A
+        <strong>NO</strong> vote opposes it, leaving current law unchanged.</p>
+      ${yesNoChoices(c.id, b.date, c.title)}`;
+    body = `
+      <h1>${esc(c.title)}</h1>
+      <p class="walk-meta">${esc(c.scopeLabel)}${s.type === "office" ? ` · ${c.voteFor > 1 ? `Vote for up to ${c.voteFor}` : "Vote for one"}` : " · Vote yes or no"}</p>
+      ${c.description ? `<p class="walk-desc">${esc(c.description)}</p>` : ""}
+      ${ask}
+      <div class="walk-reveal" data-reveal="${esc(`where::${c.id}`)}"${showChoices ? "" : " hidden"}>
+        ${choices}
+      </div>
+      ${raceLinks(place, c)}`;
+  } else if (s.type === "variants") {
+    const chosen = picksFor(b.date)[s.key] || null;
+    body = `
+      <h1>${esc(s.office)}</h1>
+      <div class="walk-ask">
+        <p><strong>Your ballot has one of these races, depending on where you live.</strong>
+          Which district are you in?
+          ${officialSampleBallotUrl(place) ? `<a href="${esc(officialSampleBallotUrl(place))}" target="_blank" rel="noopener">Check your official sample ballot ↗</a>` : ""}</p>
+        <div class="walk-yn">
+          ${s.variants.map((v) => `<label class="walk-yn-opt"><input type="radio" name="where-${esc(s.key)}" data-where="${esc(s.key)}" value="${esc(v.id)}"${chosen === v.id ? " checked" : ""}><span>${esc(v.scopeShort || v.scopeLabel)}</span></label>`).join("")}
+          <label class="walk-yn-opt"><input type="radio" name="where-${esc(s.key)}" data-where="${esc(s.key)}" value="unsure"${chosen === "unsure" ? " checked" : ""}><span>Not sure</span></label>
+        </div>
+      </div>
+      ${s.variants.map((v) => `
+        <div class="walk-reveal" data-reveal="${esc(s.key)}" data-for="${esc(v.id)}"${chosen === v.id ? "" : " hidden"}>
+          <p class="walk-meta">${esc(v.title)} · ${esc(v.scopeLabel)}</p>
+          ${v.description ? `<p class="walk-desc">${esc(v.description)}</p>` : ""}
+          ${officeChoices(place, v, b.date)}
+          ${raceLinks(place, v)}
+        </div>`).join("")}`;
+  } else if (s.type === "retention") {
+    const byCourt = new Map();
+    for (const c of s.contests) {
+      if (!byCourt.has(c.scopeLabel)) byCourt.set(c.scopeLabel, []);
+      byCourt.get(c.scopeLabel).push(c);
+    }
+    const jpr = s.contests.flatMap((c) => c.resources || []).find((r) => /yourmissourijudges/.test(r.url || ""));
+    body = `
+      <h1>Judges: keep or remove</h1>
+      <p class="walk-desc">These judges are not running against anyone. For each one, a
+        <strong>YES</strong> vote keeps the judge in office for a new term and a
+        <strong>NO</strong> vote is a vote to remove the judge. You can leave any of them blank.</p>
+      ${jpr ? `<div class="walk-links">${resourceCard(jpr)}</div>` : ""}
+      ${[...byCourt].map(([court, list]) => `
+        <h3 class="walk-court">${esc(court)}</h3>
+        <ul class="walk-judges">
+          ${list.map((c) => `<li class="walk-judge">
+            <a class="walk-judge-name" href="${esc(`#/city/${place.key}/measure/${c.id}`)}" target="_blank" rel="noopener">${esc(String(c.title).replace(/^Retention\s+[—–-]\s+/, ""))}</a>
+            ${yesNoChoices(c.id, b.date, c.title)}
+          </li>`).join("")}
+        </ul>`).join("")}`;
+  }
+
+  const prev = n > 1 ? walkHref(place, n - 1) : walkHref(place);
+  const next = n < steps.length ? walkHref(place, n + 1) : walkHref(place, "review");
+  paint(`
+    <a class="backlink" href="#/city/${esc(place.key)}">‹ Leave the walkthrough</a>
+    <article class="detail-sheet walk-sheet">
+      ${walkProgress(n, steps.length, s.section)}
+      ${body}
+      <div class="walk-nav">
+        <a class="walk-btn" href="${prev}">← Back</a>
+        <a class="walk-btn primary" href="${next}">${n < steps.length ? "Next →" : "Review my choices →"}</a>
+      </div>
+    </article>`);
+  bindWalkCommon(place);
+  bindWalkChoices(place);
+  document.title = `${n} of ${steps.length} — Walk through your ballot — Civic Gateway`;
+}
+
+// What the visitor chose for one step, as plain lines for the review and the
+// printed notes. Nothing chosen is said plainly, never filled in.
+function walkSummary(place, s) {
+  const p = picksFor(place.ballot.date);
+  const office = (c) => {
+    const v = p[c.id];
+    if (!v) return "No choice";
+    if (v.writeIn != null) return v.writeIn ? `Write-in: ${v.writeIn}` : "Write-in (no name entered)";
+    const names = v.names || [v.name];
+    return names.map((nm) => {
+      const cand = c.candidates.find((x) => x.name === nm);
+      return cand && cand.party ? `${nm} (${cand.party})` : nm;
+    }).join(", ");
+  };
+  const yn = (k) => (p[k] === "yes" ? "Yes" : p[k] === "no" ? "No" : "No choice");
+
+  if (s.type === "office" || s.type === "measure") {
+    const c = s.contest;
+    const lines = [];
+    if (s.askIfOnBallot) {
+      const w = p[`where::${c.id}`];
+      if (w === "no") return [{ label: c.title, value: "Not on my ballot" }];
+      if (w !== "yes") return [{ label: c.title, value: "Not sure if this is on my ballot" }];
+    }
+    lines.push({ label: c.title, value: s.type === "office" ? office(c) : yn(c.id) });
+    return lines;
+  }
+  if (s.type === "variants") {
+    const w = p[s.key];
+    const v = s.variants.find((x) => x.id === w);
+    if (!v) return [{ label: s.office, value: "Not sure which district — check your sample ballot" }];
+    return [{ label: v.title, value: office(v) }];
+  }
+  if (s.type === "retention") {
+    return s.contests.map((c) => ({
+      label: `Keep Judge ${String(c.title).replace(/^Retention\s+[—–-]\s+/, "")}?`, value: yn(c.id),
+    }));
+  }
+  return [];
+}
+
+function renderWalkReview(place, steps) {
+  const b = place.ballot;
+  const guide = votingGuide(place);
+  const next = guide && nextDeadline(guide);
+  const lookups = (guide && guide.lookups) || [];
+  let section = null;
+  const rows = steps.map((s, i) => {
+    const head = s.section !== section ? `<h3 class="walk-review-section">${esc(s.section)}</h3>` : "";
+    section = s.section;
+    return head + `<div class="walk-review-step">
+        <div class="walk-review-rows">
+          ${walkSummary(place, s).map((l) => `<div class="walk-review-row">
+            <span class="walk-review-race">${esc(l.label)}</span>
+            <span class="walk-review-pick${/^No choice|^Not sure/.test(l.value) ? " none" : ""}">${esc(l.value)}</span>
+          </div>`).join("")}
+        </div>
+        <a class="walk-change" href="${walkHref(place, i + 1)}">Change</a>
+      </div>`;
+  }).join("");
+
+  paint(`
+    <a class="backlink" href="#/city/${esc(place.key)}">‹ Back to the full ballot</a>
+    <article class="detail-sheet walk-sheet walk-review">
+      <div class="walk-print-head">
+        <strong>My ballot notes — not a ballot</strong>
+        <span>Personal notes made at civicgateway.org. Vote on the official ballot at your polling place.</span>
+      </div>
+      <div class="walk-kicker">${esc(b.name)} · ${esc(formatDate(b.date))}</div>
+      <h1>Your choices</h1>
+      <p class="walk-lead">${esc(place.name)}${LOCATION ? ` · ${esc(LOCATION.label)}` : ""}.
+        Check them over, change anything, then print them if you'd like notes to take with you.</p>
+      <div class="walk-review-list">${rows}</div>
+      <div class="walk-print-foot">
+        ${next ? `<p><strong>Next:</strong> ${esc(next.label)} — ${esc(formatShortDate(next.on))}.</p>` : ""}
+        <p>Missouri lets voters bring their own notes like these to the polls. Keep them to
+          yourself: showing someone how you voted is not allowed. Bring a photo ID.</p>
+        ${lookups.length ? `<p>Find your polling place, early voting sites and official sample
+          ballot through the ${esc(guide.authority)}.</p>` : ""}
+      </div>
+      <div class="walk-nav">
+        <button type="button" class="walk-btn primary" id="walkPrint">Print my notes</button>
+        <a class="walk-btn" href="${walkHref(place, steps.length)}">← Back to the last race</a>
+        <button type="button" class="walk-btn" id="walkStartOver">Clear my choices</button>
+      </div>
+      ${lookups.length ? `<div class="vote-lookups walk-no-print">
+        <span class="vote-lookups-from">From the ${esc(guide.authority)}:</span>
+        ${lookups.map((l) => { const u = safeUrl(l.url); return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(l.label)}</a>` : ""; }).join("")}
+      </div>` : ""}
+      ${rememberControl()}
+      ${walkPrivacyNote()}
+    </article>`);
+  bindWalkCommon(place);
+  on("walkPrint", "click", () => window.print());
+  on("walkStartOver", "click", () => {
+    if (!window.confirm("Clear every choice you've made for this election?")) return;
+    PICKS[b.date] = {};
+    writeKept(KEY_PICKS, PICKS);
+    route();
+  });
+  document.title = `Your ballot notes — ${place.name} — Civic Gateway`;
+}
+
+function bindWalkCommon(place) {
+  on("walkRemember", "change", (e) => setRemember(e.target.checked));
+  on("walkForget", "click", () => {
+    if (!window.confirm("Forget your location and every choice you've made, on this device?")) return;
+    forgetEverything();
+    location.hash = `#/city/${place.key}`;
+  });
+}
+
+function bindWalkChoices(place) {
+  const date = place.ballot.date;
+  const root = $("results");
+  const contestById = new Map();
+  for (const c of place.contests.values()) contestById.set(c.id, c);
+
+  // Candidates (radio or checkbox).
+  root.querySelectorAll("input[data-contest][data-i], input[data-writein]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const id = input.dataset.contest;
+      const c = contestById.get(id);
+      if (!c) return;
+      if (input.dataset.writein) {
+        const text = root.querySelector(`.walk-writein-text[data-contest="${CSS.escape(id)}"]`);
+        setPick(date, id, { writeIn: (text && text.value.trim()) || "" });
+        if (text) text.focus();
+        return;
+      }
+      if (c.voteFor > 1) {
+        const boxes = [...root.querySelectorAll(`input[data-contest="${CSS.escape(id)}"][data-i]`)];
+        const on = boxes.filter((x) => x.checked);
+        const limit = root.querySelector(`.walk-limit[data-contest="${CSS.escape(id)}"]`);
+        if (on.length > c.voteFor) {
+          input.checked = false;
+          if (limit) { limit.hidden = false; limit.textContent = `You can choose up to ${c.voteFor}.`; }
+          return;
+        }
+        if (limit) limit.hidden = true;
+        const names = on.map((x) => c.candidates[Number(x.dataset.i)].name);
+        setPick(date, id, names.length ? { names } : null);
+      } else {
+        setPick(date, id, { name: c.candidates[Number(input.dataset.i)].name });
+      }
+    });
+  });
+  // Typing a write-in selects the write-in option.
+  root.querySelectorAll(".walk-writein-text").forEach((text) => {
+    text.addEventListener("input", () => {
+      const id = text.dataset.contest;
+      const radio = root.querySelector(`input[data-writein][data-contest="${CSS.escape(id)}"]`);
+      if (radio) radio.checked = true;
+      setPick(date, id, { writeIn: text.value.trim() });
+    });
+  });
+  // Yes / no.
+  root.querySelectorAll("input[data-yn]").forEach((input) => {
+    input.addEventListener("change", () => setPick(date, input.dataset.yn, input.value));
+  });
+  // "Which one is on your ballot?" — show the matching race, hide the rest.
+  root.querySelectorAll("input[data-where]").forEach((input) => {
+    input.addEventListener("change", () => {
+      const key = input.dataset.where;
+      setPick(date, key, input.value);
+      root.querySelectorAll(`[data-reveal="${CSS.escape(key)}"]`).forEach((el) => {
+        el.hidden = el.dataset.for ? el.dataset.for !== input.value : input.value !== "yes";
+      });
+    });
+  });
+  // Clear buttons.
+  root.querySelectorAll("button.walk-clear").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.contest || btn.dataset.ynClear;
+      setPick(date, id, null);
+      const sel = btn.dataset.contest
+        ? `input[data-contest="${CSS.escape(id)}"]`
+        : `input[data-yn="${CSS.escape(id)}"]`;
+      root.querySelectorAll(sel).forEach((x) => { if (x.type !== "text") x.checked = false; });
+    });
+  });
+}
+
 /* ---------- Chrome + painting ---------- */
 
 function setChrome({ picker, selected }) {
@@ -2060,6 +2655,7 @@ function paintNotFound(message) {
      #/city/<city>/person/<slug>         candidate or officeholder page
      #/city/<city>/contest/<id>          one contest, with its debates
      #/city/<city>/measure/<id>          one ballot measure
+     #/city/<city>/walk[/<n>|/review]    walk through the ballot one race at a time
 ------------------------------------------------------------------- */
 
 function navigate(path, { replace = false } = {}) {
@@ -2081,6 +2677,7 @@ function parseHash() {
   const city = parts[1];
   if (parts.length === 2) return { name: "city", city };
   const [, , kind, id] = parts;
+  if (kind === "walk") return { name: "walk", city, id: id ? decodeURIComponent(id) : null };
   if (["person", "contest", "measure"].includes(kind) && id) {
     return { name: kind, city, id: decodeURIComponent(id) };
   }
@@ -2093,9 +2690,22 @@ function route() {
 
   if (r.name === "home") {
     setChrome({ picker: true, selected: null });
+    if ($("city")) $("city").value = "";
+    // Someone coming back with a kept location gets a way straight back in.
+    const back = LOCATION && LOCATION.city && PLACES[LOCATION.city];
+    if (back) {
+      paint(`<div class="resume-note">
+          <span>Pick up where you left off: <strong>${esc(back.name)}</strong>${
+            LOCATION.label ? ` · ${esc(LOCATION.label)}` : ""}</span>
+          <a href="#/city/${esc(back.key)}">See the ballot</a>
+          ${back.ballot && back.ballot.hasContests ? `<a href="${walkHref(back)}">Walk through it</a>` : ""}
+          <button type="button" class="linkish" id="resumeForget">Forget it</button>
+        </div>`);
+      on("resumeForget", "click", () => { forgetEverything(); route(); });
+      return;
+    }
     $("results").classList.remove("active");
     $("results").innerHTML = "";
-    if ($("city")) $("city").value = "";
     return;
   }
 
@@ -2103,6 +2713,7 @@ function route() {
   if (!place) return paintNotFound("We don't have information for that location yet.");
 
   if (r.name === "city") return renderCity(place);
+  if (r.name === "walk") return renderWalk(place, r.id);
   if (r.name === "person") {
     const person = place.people.get(r.id);
     return person ? renderPerson(place, person) : paintNotFound("We couldn't find that person.");
@@ -2120,13 +2731,11 @@ function route() {
 
 /* ---------- Boot ---------- */
 
-// A narrowed ballot survives navigating between pages in this tab, and dies
-// with the tab. It is deliberately not localStorage: someone else using the
-// browser tomorrow should not inherit a stranger's address.
-try {
-  const saved = sessionStorage.getItem("civic.location");
-  if (saved) LOCATION = JSON.parse(saved);
-} catch { LOCATION = null; }
+// A narrowed ballot and walkthrough choices survive navigating between pages
+// in this tab and die with it — unless the visitor chose "Remember on this
+// device". See "What this site keeps on your device".
+LOCATION = readKept(KEY_LOCATION);
+PICKS = readKept(KEY_PICKS) || {};
 
 // Both review stamps come from one constant; the markup carries no date of
 // its own, so a stale one can't survive in the HTML.

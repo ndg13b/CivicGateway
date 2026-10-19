@@ -996,6 +996,172 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
   .hero-av { width: 50px; height: 50px; font-size: 1rem; }
 }
 
+/* ---------- Walk me through my ballot ----------
+   One race per screen. Big touch targets, nothing preselected, and every
+   choice presented the same way. */
+
+.walk-cta {
+  display: inline-flex; align-items: center; min-height: 44px;
+  margin-top: var(--s3); padding: 0 var(--s4);
+  font-size: .78rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--surface); background: var(--ink); text-decoration: none;
+  border: 1px solid var(--ink);
+}
+.walk-cta:hover, .walk-cta:focus-visible { background: var(--accent); border-color: var(--accent); }
+
+.walk-sheet h1 {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.1rem);
+  font-weight: 400; line-height: 1.15; color: var(--ink);
+  margin: var(--s2) 0 var(--s2);
+}
+.walk-kicker {
+  font-size: .66rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--accent);
+}
+.walk-lead { color: var(--ink-2); line-height: 1.65; max-width: var(--measure); margin-bottom: var(--s4); }
+.walk-points { margin: 0 0 var(--s5) var(--s5); color: var(--ink-2); line-height: 1.7; }
+.walk-meta { color: var(--ink-3); font-size: .9rem; margin-bottom: var(--s3); }
+.walk-desc { color: var(--ink-2); line-height: 1.6; margin-bottom: var(--s4); max-width: var(--measure); }
+.walk-how { color: var(--ink-2); font-size: .92rem; margin: var(--s3) 0; }
+.walk-official {
+  font-size: .98rem; line-height: 1.6; color: var(--ink);
+  border-left: 3px solid var(--accent); padding: var(--s2) 0 var(--s2) var(--s4);
+  margin: var(--s3) 0;
+}
+
+.walk-progress { margin-bottom: var(--s5); }
+.walk-progress-text {
+  display: flex; justify-content: space-between; gap: var(--s3);
+  font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: var(--s2);
+}
+.walk-bar { height: 6px; background: var(--paper-2); border: 1px solid var(--rule); }
+.walk-bar span { display: block; height: 100%; background: var(--ink); }
+
+.walk-options { border: 0; margin: var(--s4) 0; }
+.walk-options legend {
+  font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: var(--s2);
+}
+.walk-option {
+  display: flex; align-items: center; gap: var(--s3);
+  min-height: 56px; padding: var(--s3) var(--s4);
+  border: 1px solid var(--rule-strong); background: var(--surface);
+  margin-bottom: var(--s2); cursor: pointer;
+}
+.walk-option:has(input:checked) { border-color: var(--ink); box-shadow: inset 4px 0 0 var(--ink); background: var(--paper-2); }
+.walk-option input[type="radio"], .walk-option input[type="checkbox"] { width: 20px; height: 20px; flex: none; accent-color: var(--ink); }
+.walk-option-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.walk-option-name { font-weight: 600; color: var(--ink); }
+.walk-option-meta { font-size: .86rem; color: var(--ink-3); }
+.walk-option-more { flex: none; font-size: .86rem; white-space: nowrap; }
+.walk-writein-text {
+  margin-top: var(--s2); width: 100%; max-width: 360px; min-height: 40px;
+  font: inherit; padding: 0 var(--s2); border: 1px solid var(--rule-strong); background: var(--surface);
+}
+.walk-limit { color: var(--accent); font-size: .9rem; }
+.walk-clear { font-size: .86rem; }
+
+.walk-yn { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); }
+.walk-yn-opt {
+  display: inline-flex; align-items: center; gap: var(--s2);
+  min-height: 44px; padding: 0 var(--s4);
+  border: 1px solid var(--rule-strong); background: var(--surface); cursor: pointer; font-weight: 600;
+}
+.walk-yn-opt:has(input:checked) { border-color: var(--ink); background: var(--paper-2); box-shadow: inset 0 -3px 0 var(--ink); }
+.walk-yn-opt input { width: 18px; height: 18px; accent-color: var(--ink); }
+
+.walk-ask {
+  background: var(--paper-2); border-left: 3px solid var(--accent);
+  padding: var(--s4); margin: var(--s4) 0;
+}
+.walk-ask p { margin-bottom: var(--s3); line-height: 1.6; }
+
+.walk-links { margin: var(--s5) 0 0; }
+.walk-links h3 {
+  font-size: .68rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--ink-3); padding-bottom: var(--s2); border-bottom: 1px solid var(--rule);
+}
+.walk-racepage { display: inline-block; margin-top: var(--s3); font-size: .92rem; }
+
+.walk-court {
+  font-size: .72rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--ink-3); margin: var(--s5) 0 var(--s2);
+}
+.walk-judges { list-style: none; }
+.walk-judge {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s2) var(--s4);
+  padding: var(--s3) 0; border-bottom: 1px dotted var(--rule-strong);
+}
+.walk-judge-name { font-weight: 600; }
+
+.walk-nav { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s6); }
+.walk-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 48px; padding: 0 var(--s5);
+  font-family: var(--font-ui); font-size: .8rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink); background: var(--surface); border: 1px solid var(--rule-strong);
+  text-decoration: none; cursor: pointer;
+}
+.walk-btn.primary { color: var(--surface); background: var(--ink); border-color: var(--ink); }
+.walk-btn:hover, .walk-btn:focus-visible { border-color: var(--accent); }
+.walk-btn.primary:hover, .walk-btn.primary:focus-visible { background: var(--accent); }
+
+.walk-remember {
+  display: flex; gap: var(--s3); align-items: flex-start;
+  margin-top: var(--s5); padding: var(--s3) var(--s4);
+  border: 1px solid var(--rule); background: var(--paper-2);
+  font-size: .9rem; color: var(--ink-2); cursor: pointer;
+}
+.walk-remember input { width: 20px; height: 20px; margin-top: 2px; flex: none; accent-color: var(--ink); }
+.walk-privacy { margin-top: var(--s4); font-size: .86rem; color: var(--ink-3); line-height: 1.6; }
+
+.walk-review-section {
+  font-size: .68rem; font-weight: 700; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--accent); margin: var(--s5) 0 var(--s2);
+}
+.walk-review-step {
+  display: grid; grid-template-columns: 1fr auto; gap: var(--s4); align-items: start;
+  padding: var(--s3) 0; border-bottom: 1px solid var(--rule);
+}
+.walk-review-row { display: flex; flex-wrap: wrap; gap: 2px var(--s4); padding: 2px 0; }
+.walk-review-race { flex: 1 1 240px; color: var(--ink-2); }
+.walk-review-pick { flex: 1 1 200px; font-weight: 700; color: var(--ink); }
+.walk-review-pick.none { font-weight: 400; color: var(--ink-4); font-style: italic; }
+.walk-change { font-size: .88rem; white-space: nowrap; }
+.walk-print-head, .walk-print-foot { display: none; }
+.walk-review .walk-print-foot { display: block; margin-top: var(--s5); font-size: .9rem; color: var(--ink-2); }
+.walk-review .walk-print-foot p { margin-bottom: var(--s2); }
+
+.resume-note {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s4);
+  max-width: 760px; margin: 0 auto; padding: var(--s4);
+  background: var(--paper-2); border-left: 3px solid var(--accent); font-size: .95rem;
+}
+
+@media (max-width: 560px) {
+  .walk-nav .walk-btn { flex: 1 1 100%; }
+  .walk-option { padding: var(--s3); }
+}
+
+/* Printing the review gives one plain page of notes. It must never look like
+   an official ballot, so it says so at the top and carries no ballot styling. */
+@media print {
+  body { background: #fff; }
+  .site-header, .site-footer, #intro, #pickerCard, .backlink,
+  .walk-nav, .walk-change, .walk-remember, .walk-privacy, .walk-no-print { display: none !important; }
+  .detail-sheet { box-shadow: none; border: 0; padding: 0; max-width: none; }
+  .walk-review .walk-print-head {
+    display: block; border: 2px solid #000; padding: 8px 12px; margin-bottom: 16px;
+  }
+  .walk-print-head strong { display: block; font-size: 1.1rem; }
+  .walk-print-head span { font-size: .85rem; }
+  .walk-review-step { break-inside: avoid; padding: 6px 0; }
+  .walk-review-section { color: #000; }
+  a { color: #000; text-decoration: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   .spinner { animation-duration: 1.5s; }
