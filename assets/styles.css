@@ -670,6 +670,24 @@ select:disabled { background-color: #efeade; color: var(--ink-4); cursor: not-al
 .deadline-what strong { color: var(--ink); font-weight: 600; }
 .deadline-link { margin-left: var(--s2); font-size: .9rem; white-space: nowrap; }
 
+/* After the polls close the banner points to results instead. Same frame as
+   the deadline banner; the links get a line of their own so each is easy to
+   tap on a phone. */
+.results-banner {
+  display: block; line-height: 1.5;
+  margin: var(--s3) 0 0;
+  padding: var(--s2) var(--s3);
+  background: var(--accent-soft);
+  border: 1px solid var(--rule-strong);
+  border-left: 3px solid var(--accent);
+}
+.results-links {
+  display: flex; flex-wrap: wrap; gap: var(--s1) var(--s4);
+  margin-top: var(--s1);
+  font-size: .95rem;
+}
+.results-links a { display: inline-block; padding: 2px 0; min-height: 28px; }
+
 .vote-panel { margin-top: var(--s6); }
 
 .vote-dates { list-style: none; border-top: 1px solid var(--rule); }

@@ -114,6 +114,18 @@ const VOTING_GUIDE = {
     elections: {
       "2026-11-03": {
         pollHours: "6:00 a.m. to 7:00 p.m.",
+        pollsCloseHour: 19,   // 7:00 p.m., local time
+        // Where results are, once polls close. Each is the authority's own
+        // site; the county's results PDF is not linked until it exists, so
+        // its address is never guessed.
+        results: [
+          { label: "St. Louis County results",
+            source: "St. Louis County Board of Elections",
+            url: "https://www.stlouiscountymovotes.gov/" },
+          { label: "Missouri statewide results",
+            source: "Missouri Secretary of State",
+            url: "https://enr.sos.mo.gov/" },
+        ],
         // The Board of Elections' own lookup tools for this election, on its
         // ArcGIS account. Election-specific, so they live here, not above.
         lookups: [
@@ -458,19 +470,63 @@ function scopesFor(place) {
   return scopes;
 }
 
+// How long a finished election stays on the page. Missouri certifies
+// statewide results by the second Tuesday in December — about five weeks.
+const RECENT_ELECTION_DAYS = 45;
+
+// Polls are closed once election day is past, or on the day itself after the
+// closing hour. Anyone in line at closing can still vote; the page says so.
+function pollsClosed(place) {
+  const b = place.ballot;
+  if (!b) return false;
+  if (b.over) return true;
+  const g = votingGuide(place);
+  if (!g || g.pollsCloseHour == null || daysUntil(b.date) !== 0) return false;
+  return new Date().getHours() >= g.pollsCloseHour;
+}
+
+function resultsBanner(place) {
+  const g = votingGuide(place);
+  const links = ((g && g.results) || [])
+    .map((r) => { const u = safeUrl(r.url); return u ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(r.label)}</a>` : ""; })
+    .filter(Boolean);
+  const b = place.ballot;
+  return `<div class="results-banner">
+      <span class="deadline-when">${b.over ? "Election over" : "Polls closed"}</span>
+      <span class="deadline-what"><strong>Results for the ${esc(formatShortDate(b.date))} election</strong>${
+        b.over ? "" : " — anyone in line at 7:00 p.m. can still vote"}.
+        Results are unofficial until certified.</span>
+      ${links.length ? `<span class="results-links">${links.join("")}</span>` : ""}
+    </div>`;
+}
+
 function buildBallot(place) {
   const scopes = scopesFor(place);
   const cutoff = today();
 
   // The nearest upcoming election date across all scopes is "the" next ballot.
   const dates = [];
+  const pastDates = [];
   for (const s of scopes) {
     for (const e of s.elections || []) {
       if (e.election_date >= cutoff) dates.push(e.election_date);
+      else pastDates.push(e.election_date);
     }
   }
-  if (!dates.length) return null;
-  const date = dates.sort()[0];
+  // With nothing upcoming, a just-held election stays on the page — marked
+  // as over, pointing to results — until results are certified and then some.
+  // Before this, the morning after an election the ballot vanished and the
+  // page said "No election is currently scheduled", just as people came
+  // looking for results.
+  let date, over = false;
+  if (dates.length) {
+    date = dates.sort()[0];
+  } else {
+    const recent = pastDates.sort().pop();
+    if (!recent || daysUntil(recent) < -RECENT_ELECTION_DAYS) return null;
+    date = recent;
+    over = true;
+  }
 
   let name = "Election";
   let note = null;
@@ -565,6 +621,7 @@ function buildBallot(place) {
 
   return {
     date,
+    over,
     name,
     note,
     pending: [...new Set(pending)],
@@ -917,7 +974,7 @@ function renderCity(place) {
       <button type="button" class="linkish change-place" id="changePlace"
               aria-controls="pickerCard" aria-expanded="${PICKER_OPEN}">Change city or address</button>
     </div>
-    ${deadlineBanner(place)}`;
+    ${pollsClosed(place) ? resultsBanner(place) : deadlineBanner(place)}`;
 
   // Where this ballot is for, and how to narrow it, sit above the ballot
   // sheet rather than inside it: the sheet holds the ballot and nothing else.
@@ -1239,9 +1296,9 @@ function renderBallot(place) {
 
   let html = `<section class="ballot-panel" aria-label="What is on your ballot">
     <div class="ballot-head">
-      <div class="kicker">What's on your ballot</div>
+      <div class="kicker">${b.over ? "What was on the ballot" : "What's on your ballot"}</div>
       <h3>${esc(b.name)} <span class="when">${esc(formatDate(b.date))}</span></h3>
-      ${b.hasContests ? `<a class="walk-cta" href="${walkHref(place)}">${
+      ${b.hasContests && !b.over ? `<a class="walk-cta" href="${walkHref(place)}">${
         Object.keys(picksFor(b.date)).length ? "Continue walking through my ballot" : "Walk me through my ballot"} →</a>` : ""}
     </div>
     ${ballotSummary(b)}`;
@@ -1805,7 +1862,7 @@ function deadlineBanner(place) {
 // somebody assume they still have time.
 function renderVotingInfo(place) {
   const guide = votingGuide(place);
-  if (!guide) return "";
+  if (!guide || (place.ballot && place.ballot.over)) return "";
   const next = nextDeadline(guide);
 
   const rows = guide.dates.map((d) => {
@@ -2027,7 +2084,8 @@ function renderPerson(place, person) {
 
   const isCandidate = person.role === "candidate";
   const metaBits = [person.party, person.term,
-    isCandidate && place.ballot ? `On the ballot ${formatShortDate(place.ballot.date)}` : null]
+    isCandidate && place.ballot
+      ? `${place.ballot.over ? "Was on the ballot" : "On the ballot"} ${formatShortDate(place.ballot.date)}` : null]
     .filter(Boolean);
 
   const contest = person.contestId ? place.contests.get(person.contestId) : null;
@@ -2253,7 +2311,7 @@ function walkPrivacyNote() {
 
 function renderWalk(place, stepParam) {
   const b = place.ballot;
-  if (!b || !b.hasContests) return renderCity(place);
+  if (!b || !b.hasContests || b.over) return renderCity(place);
 
   if (walkNeedsAddress(place)) return renderWalkAddress(place);
   setChrome({ picker: false, selected: place });
@@ -2737,7 +2795,7 @@ function route() {
           <span>Pick up where you left off: <strong>${esc(back.name)}</strong>${
             LOCATION.label ? ` · ${esc(LOCATION.label)}` : ""}</span>
           <a href="#/city/${esc(back.key)}">See the ballot</a>
-          ${back.ballot && back.ballot.hasContests ? `<a href="${walkHref(back)}">Walk through it</a>` : ""}
+          ${back.ballot && back.ballot.hasContests && !back.ballot.over ? `<a href="${walkHref(back)}">Walk through it</a>` : ""}
           <button type="button" class="linkish" id="resumeForget">Forget it</button>
         </div>`);
       on("resumeForget", "click", () => { forgetEverything(); route(); });
